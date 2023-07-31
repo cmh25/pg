@@ -5,9 +5,9 @@ for t in `cat tests`; do
   ../pg $t > $t.out 2>/dev/null
   diff -u $t.res $t.out &> $t.diff
   if [ $? -ne 0 ]; then
-    echo -e "\e[1m\e[31mfail *****\e[0m"
+    echo -e "fail *****"
   else
-    echo -e "\e[1m\e[32mpass\e[0m"
+    echo -e "pass"
     rm -f $t.out $t.diff
   fi
 done

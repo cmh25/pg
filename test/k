@@ -1,0 +1,11 @@
+g > 
+g > g s
+s > '\n'
+s > e '\n'
+s > e ';'
+s > Q '\n'
+e > o
+e > o V e
+e > V e
+o > N
+o > '(' e ')'

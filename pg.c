@@ -192,6 +192,7 @@ void pgread(char *g) {
   if(!(fp=fopen(g,"r"))) { fprintf(stderr,"error: file not found\n"); exit(1); }
   while(xfgets(b,BS,fp)) {
     if(!*b) continue;
+    if('#'==*b) continue;
     if('|'==*b) {
       sprintf(ra[ri].r,"%s %s %s",p,q,b+1); 
       cs(ra[ri++].r);

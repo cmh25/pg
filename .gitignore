@@ -1,0 +1,5 @@
+pg
+*.o
+*.obj
+*.exe
+test/*.out

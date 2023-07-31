@@ -1,0 +1,1 @@
+cl main.c pg.c show.c /Fe:pg

@@ -2,5 +2,8 @@ pg
 *.o
 *.obj
 *.exe
+*~
 *.swp
+*.swo
 test/*.out
+test/*.diff

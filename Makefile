@@ -11,6 +11,6 @@ test: pg
 	$(MAKE) -C test
 
 clean:
-	rm -f pg *.o test/*.out
+	rm -f pg *.o
 
 .PHONY: test

@@ -1,0 +1,6 @@
+a > b | c + d | e * f
+b > | g
+    | h + i
+c > j
+  | k
+  | l * m

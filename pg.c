@@ -167,7 +167,7 @@ static void goto_(int s, char *p) {
   if(f) closure(SN);
 }
 
-static char* split(char *p) {
+static char* split(char *p, char c) {
     int i,n,s=0;
     static char *q=0;
     if(p) q=p;
@@ -177,7 +177,7 @@ static char* split(char *p) {
         if(*q=='<') s=1;
         else if(*q=='\'') s=2;
         else if(*q=='"') s=3;
-        else if(*q==' ') { *q++=0; break; }
+        else if(*q==c) { *q++=0; break; }
       }
       else if(s==1) { if(*q=='>') s=0; }  /* inside <> */
       else if(s==2) { if(*q=='\'') s=0; } /* inside '' */
@@ -188,19 +188,23 @@ static char* split(char *p) {
 
 void pgread(char *g) {
   FILE *fp;
-  char p[256],q[256];
+  char p[256],q[256],r[1024],*s;
   if(!(fp=fopen(g,"r"))) { fprintf(stderr,"error: file not found\n"); exit(1); }
   while(xfgets(b,BS,fp)) {
     if(!*b) continue;
     if('#'==*b) continue;
-    if('|'==*b) {
-      sprintf(ra[ri].r,"%s %s %s",p,q,b+1); 
-      cs(ra[ri++].r);
-    }
+    if('|'==*b) strcpy(r,b+1);
     else {
-      strncpy(ra[ri++].r,b,256);
-      strcpy(p,split(b));
-      strcpy(q,split(0));
+      strcpy(p,split(b,' '));
+      strcpy(q,split(0,' '));
+      strcpy(r,b+strlen(p)+strlen(q)+2);
+    }
+    s=split(r,'|');
+    sprintf(ra[ri].r,"%s %s %s",p,q,s?s:""); 
+    cs(ra[ri++].r);
+    while((s=split(0,'|'))) {
+      sprintf(ra[ri].r,"%s %s %s",p,q,s?s:""); 
+      cs(ra[ri++].r);
     }
   }
   fclose(fp);
@@ -213,16 +217,16 @@ void pgparse() {
   addt(str("$a"));
   for(i=1;i<ri;i++) {
     strncpy(b,ra[i].r,BS);
-    p=split(b); if(!p) continue; addnt(str(p));
+    p=split(b,' '); if(!p) continue; addnt(str(p));
   }
   for(i=1;i<ri;i++) {
     strncpy(b,ra[i].r,BS);
-    p=split(b); if(!p) continue; ra[i].lhs=str(p);
-    p=split(0); if(!p) continue; ra[i].op=str(p);
-    p=split(0); while(p) {
+    p=split(b,' '); if(!p) continue; ra[i].lhs=str(p);
+    p=split(0,' '); if(!p) continue; ra[i].op=str(p);
+    p=split(0,' '); while(p) {
       ra[i].rhs[ra[i].rhsi++]=str(p);
       addt(str(p));
-      p=split(0);
+      p=split(0,' ');
     }
   }
   ra[0].lhs=str("$a");

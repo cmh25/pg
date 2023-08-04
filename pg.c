@@ -5,11 +5,8 @@
 #include <string.h>
 #include <ctype.h>
 
-#define BS 1024
-
-static char b[BS];
-static rule ra[1024],*rp;
-static int ri=1;
+static rule RA[1024];
+static int RN=1;
 
 /* states */
 static int S[10240]; /* state */
@@ -40,24 +37,12 @@ static char* str(char *s) {
 }
 
 /* nonterminals and terminals */
-static char *nt[256],*t[256];
-static int nti,ti;
-static int isnt(char *s) {
-  int i;
-  for(i=0;i<nti;i++) if(s==nt[i]) return 1;
-  return 0;
-}
-static void addnt(char *s) {
-  int i;
-  for(i=0;i<nti;i++) if(nt[i]==s) return;
-  nt[nti++]=s;
-}
-static void addt(char *s) {
-  int i;
-  for(i=0;i<nti;i++) if(nt[i]==s) return;
-  for(i=0;i<ti;i++) if(t[i]==s) return;
-  t[ti++]=s;
-}
+static char *NT[256],*T[256];
+static int NTC,TC;
+static int ist(char *s) { int i; for(i=0;i<TC;i++) if(s==T[i]) return 1; return 0; }
+static int isnt(char *s) { int i; for(i=0;i<NTC;i++) if(s==NT[i]) return 1; return 0; }
+static void addnt(char *s) { if(isnt(s)) return; NT[NTC++]=s; }
+static void addt(char *s) { if(isnt(s)) return; if(ist(s)) return; T[TC++]=s; }
 
 /* compact spaces */
 static void cs(char *s) {
@@ -93,9 +78,10 @@ static int ins(int s, int r, int m) {
 /* unique first righthand side */
 int ufrhs(int s, char **u) {
   int i,j,f,c=0;
+  rule *rp;
   for(i=0;i<N;i++) {
     if(S[i]!=s) continue;
-    rp=&ra[R[i]];
+    rp=&RA[R[i]];
     f=0; for(j=0;j<c;j++) if(u[j]==rp->rhs[M[i]]) f=1;
     if(!f) u[c++]=rp->rhs[M[i]];
   }
@@ -111,12 +97,13 @@ static void addstate(int s, int r, int m) {
 static void closure(int s) {
   int i,j,k,c,f;
   char *u[128];
+  rule *rp;
   
   c=ufrhs(s,u);
   for(i=0;i<c;i++) {
     if(!isnt(u[i])) continue;
-    for(j=0;j<ri;j++) {
-      rp=&ra[j];
+    for(j=0;j<RN;j++) {
+      rp=&RA[j];
       if(u[i]!=rp->lhs) continue;
       if(ins(s,j,0)) continue;
       addstate(s,j,0);
@@ -141,11 +128,12 @@ static void addtrans(int s, char *t, int a, int g, int r) {
 static void goto_(int s, char *p) {
   int i,j,f=0,b,c=0,f2;
   char *rs,*nta[128];
+  rule *rp;
   GN=N; /* in case this state is not added */
   GTN=TN; /* in case this state is not added */
   for(i=0;i<N;i++) {
     if(S[i]!=s) continue;
-    rp=&ra[R[i]];
+    rp=&RA[R[i]];
     rs=rp->rhs[M[i]];
     if(rp->rhsi<=M[i]) { /* default reduce rule */
       addtrans(s,rs?rs:str(""),0,0,R[i]);
@@ -188,9 +176,9 @@ static char* split(char *p, char c) {
 
 void pgread(char *g) {
   FILE *fp;
-  char p[256],q[256],r[1024],*s;
+  char b[1024],p[256],q[256],r[1024],*s;
   if(!(fp=fopen(g,"r"))) { fprintf(stderr,"error: file not found\n"); exit(1); }
-  while(xfgets(b,BS,fp)) {
+  while(xfgets(b,1024,fp)) {
     if(!*b) continue;
     if('#'==*b) continue;
     if('|'==*b) strcpy(r,b+1);
@@ -200,11 +188,11 @@ void pgread(char *g) {
       strcpy(r,b+strlen(p)+strlen(q)+2);
     }
     s=split(r,'|');
-    sprintf(ra[ri].r,"%s %s %s",p,q,s?s:""); 
-    cs(ra[ri++].r);
+    sprintf(RA[RN].r,"%s %s %s",p,q,s?s:""); 
+    cs(RA[RN++].r);
     while((s=split(0,'|'))) {
-      sprintf(ra[ri].r,"%s %s %s",p,q,s?s:""); 
-      cs(ra[ri++].r);
+      sprintf(RA[RN].r,"%s %s %s",p,q,s?s:""); 
+      cs(RA[RN++].r);
     }
   }
   fclose(fp);
@@ -212,27 +200,27 @@ void pgread(char *g) {
 
 void pgparse() {
   int i;
-  char *p;
+  char *p,b[1024];
   addnt(str("$e"));
   addt(str("$a"));
-  for(i=1;i<ri;i++) {
-    strncpy(b,ra[i].r,BS);
+  for(i=1;i<RN;i++) {
+    strncpy(b,RA[i].r,1024);
     p=split(b,' '); if(!p) continue; addnt(str(p));
   }
-  for(i=1;i<ri;i++) {
-    strncpy(b,ra[i].r,BS);
-    p=split(b,' '); if(!p) continue; ra[i].lhs=str(p);
-    p=split(0,' '); if(!p) continue; ra[i].op=str(p);
+  for(i=1;i<RN;i++) {
+    strncpy(b,RA[i].r,1024);
+    p=split(b,' '); if(!p) continue; RA[i].lhs=str(p);
+    p=split(0,' '); if(!p) continue; RA[i].op=str(p);
     p=split(0,' '); while(p) {
-      ra[i].rhs[ra[i].rhsi++]=str(p);
+      RA[i].rhs[RA[i].rhsi++]=str(p);
       addt(str(p));
       p=split(0,' ');
     }
   }
-  ra[0].lhs=str("$a");
-  ra[0].op=ra[1].op;
-  ra[0].rhs[ra[0].rhsi++]=ra[1].lhs;
-  sprintf(ra[0].r,"%s %s %s",ra[0].lhs,ra[0].op,ra[0].rhs[0]);
+  RA[0].lhs=str("$a");
+  RA[0].op=RA[1].op;
+  RA[0].rhs[RA[0].rhsi++]=RA[1].lhs;
+  sprintf(RA[0].r,"%s %s %s",RA[0].lhs,RA[0].op,RA[0].rhs[0]);
 }
 
 static char esc[256];
@@ -251,10 +239,10 @@ static char *escape(char *s) {
 
 void pgreport() {
   int i;
-  printf("n:"); for(i=0;i<nti;i++) printf(" %s",nt[i]); printf("\n");
-  printf("t:"); for(i=0;i<ti;i++) printf(" %s",escape(t[i])); printf("\n");
+  printf("n:"); for(i=0;i<NTC;i++) printf(" %s",NT[i]); printf("\n");
+  printf("t:"); for(i=0;i<TC;i++) printf(" %s",escape(T[i])); printf("\n");
   printf("-------------------------\n");
-  for(i=0;i<ri;i++) printf("%2d. %s\n",i,escape(ra[i].r));
+  for(i=0;i<RN;i++) printf("%2d. %s\n",i,escape(RA[i].r));
 }
 
 /* goto items in states */
@@ -292,10 +280,11 @@ void pgbuild() {
 
 void pgprints(int i) {
   int j,k;
+  rule *rp;
   printf("---------- state %d ----------\n",i);
   for(j=0;j<N;j++) {
     if(S[j]!=i) continue;
-    rp=&ra[R[j]];
+    rp=&RA[R[j]];
     printf("%s %s",rp->lhs,rp->op);
     for(k=0;k<rp->rhsi;k++) {
       if(k==M[j]) printf(" .");

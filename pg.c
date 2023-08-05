@@ -217,7 +217,7 @@ static int infirst(char *p, char *q) {
 static void firstgen() {
   int i,j,k,f=1,n,m,s;
   char *p,*q;
-  for(i=0;i<TC;i++) { FK[FN]=T[i]; FV[FN][FC[FN++]++]=T[i]; }
+  for(i=0;i<TC;i++) { FK[FN]=T[i]; FV[FN][FC[FN]++]=T[i]; FN++; }
   for(i=0;i<NTC;i++) {
     FK[FN]=NT[i];
     for(j=0;j<RN;j++) if(NT[i]==RA[j].lhs && !RA[j].rhsi) FV[FN][FC[FN]++]=0;

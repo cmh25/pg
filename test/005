@@ -1,0 +1,6 @@
+# testing first() and follow()
+E > T EP
+EP > | '+' T EP
+T > F TP
+TP > | '*' F TP
+F > '(' E ')' | id

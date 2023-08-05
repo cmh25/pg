@@ -98,7 +98,7 @@ static void closure(int s) {
   int i,j,k,c,f;
   char *u[128];
   rule *rp;
-  
+
   c=ufrhs(s,u);
   for(i=0;i<c;i++) {
     if(!isnt(u[i])) continue;
@@ -156,7 +156,7 @@ static void goto_(int s, char *p) {
 }
 
 static char* split(char *p, char c) {
-    int i,n,s=0;
+    int s=0;
     static char *q=0;
     if(p) q=p;
     else p=q;
@@ -188,21 +188,165 @@ void pgread(char *g) {
       strcpy(r,b+strlen(p)+strlen(q)+2);
     }
     s=split(r,'|');
-    sprintf(RA[RN].r,"%s %s %s",p,q,s?s:""); 
+    sprintf(RA[RN].r,"%s %s %s",p,q,s?s:"");
     cs(RA[RN++].r);
     while((s=split(0,'|'))) {
-      sprintf(RA[RN].r,"%s %s %s",p,q,s?s:""); 
+      sprintf(RA[RN].r,"%s %s %s",p,q,s?s:"");
       cs(RA[RN++].r);
     }
   }
   fclose(fp);
 }
 
+static char *FK[256];
+static char *FV[256][32];
+static int FC[256];
+static int FN;
+static char *F[256];
+static int firsti(char *p) {
+  int i;
+  for(i=0;i<FN;i++) if(p==FK[i]) return i;
+  return -1;
+}
+static int infirst(char *p, char *q) {
+  int i,j;
+  i=firsti(p);
+  for(j=0;j<FC[i];j++) if(q==FV[i][j]) return 1;
+  return 0;
+}
+static void firstgen() {
+  int i,j,k,f=1,n,m,s;
+  char *p,*q;
+  for(i=0;i<TC;i++) { FK[FN]=T[i]; FV[FN][FC[FN++]++]=T[i]; }
+  for(i=0;i<NTC;i++) {
+    FK[FN]=NT[i];
+    for(j=0;j<RN;j++) if(NT[i]==RA[j].lhs && !RA[j].rhsi) FV[FN][FC[FN]++]=0;
+    ++FN;
+  }
+  while(f) {
+    f=0;
+    for(i=0;i<NTC;i++) {
+      p=NT[i];
+      for(j=0;j<RN;j++) {
+        if(p!=RA[j].lhs) continue;
+        n=firsti(p);
+        for(k=0;k<RA[j].rhsi;k++) {
+          q=RA[j].rhs[k];
+          m=firsti(q);
+          for(s=0;s<FC[m];s++) if(!infirst(p,FV[m][s])) { FV[n][FC[n]++]=FV[m][s]; f=1; }
+          if(!infirst(q,0)) break;
+        }
+      }
+    }
+  }
+}
+static int first(char **p, int c) {
+  int i,j,n,k=0,b=0,m,f;
+  for(i=0;i<c;i++) {
+    n=firsti(p[i]);
+    for(j=0;j<FC[n];j++) {
+      if(!FV[n][j]) {
+        F[k++]=FV[n][j];
+        b=1;
+      }
+      else {
+        f=0; for(m=0;m<k;m++) if(F[m]==FV[n][j]) f=1;
+        if(!f) F[k++]=FV[n][j];
+      }
+    }
+    if(b) break;
+  }
+  return k;
+}
+void pgprintfirst() {
+  int i,j;
+  for(i=0;i<FN;i++) {
+    if(ist(FK[i])) continue;
+    if(FK[i]==str("$a")) continue;
+    printf("first(%s) =",FK[i]);
+    for(j=0;j<FC[i];j++) printf(" %s",FV[i][j]);
+    printf("\n");
+  }
+}
+
+/* follow */
+static char *AK[256];
+static char *AV[256][32];
+static int AC[256];
+static int followi(char *p) {
+  int i;
+  for(i=0;i<NTC;i++) if(p==AK[i]) return i;
+  return -1;
+}
+static int infollow(char *p, char *q) {
+  int i,j;
+  i=followi(p);
+  for(j=0;j<AC[i];j++) if(q==AV[i][j]) return 1;
+  return 0;
+}
+static void followgen() {
+  int i,j,k,n,s,m,f=1,b;
+  char *p;
+  for(i=1;i<NTC;i++) AK[i]=NT[i];
+  AV[1][0]=str("$e");
+  AC[1]=1;
+  for(i=1;i<NTC;i++) {
+    p=NT[i];
+    for(j=0;j<RN;j++) {
+      for(k=0;k<RA[j].rhsi;k++) {
+        if(p!=RA[j].rhs[k]) continue;
+        if(k==RA[j].rhsi-1) continue;
+        /* A > aBb : add first(b) to follow(B) */
+        n=first(&RA[j].rhs[k+1],RA[j].rhsi-k-1);
+        m=followi(p);
+        for(s=0;s<n;s++) if(F[s] && !infollow(p,F[s])) AV[m][AC[m]++]=F[s];
+      }
+    }
+  }
+  while(f) {
+    f=0;
+    for(i=1;i<NTC;i++) {
+      p=NT[i];
+      for(j=0;j<RN;j++) {
+        for(k=0;k<RA[j].rhsi;k++) {
+          if(p!=RA[j].rhs[k]) continue;
+
+          if(k==RA[j].rhsi-1); /* A > aB */
+          else { /* A > aBb */
+            n=first(&RA[j].rhs[k+1],RA[j].rhsi-k-1);
+            b=0; for(s=0;s<n;s++) if(!F[s]) b=1;
+            if(!b) continue;
+          }
+          /* add follow(A) to follow(B) */
+          n=followi(RA[j].lhs);
+          m=followi(p);
+          for(s=0;s<AC[n];s++) {
+            if(!infollow(p,AV[n][s])) {
+              AV[m][AC[m]++]=AV[n][s];
+              f=1;
+            }
+          }
+        }
+
+      }
+    }
+  }
+}
+void pgprintfollow() {
+  int i,j;
+  for(i=1;i<NTC;i++) {
+    printf("follow(%s) =",AK[i]);
+    for(j=0;j<AC[i];j++) printf(" %s",AV[i][j]);
+    printf("\n");
+  }
+  printf("\n");
+}
+
 void pgparse() {
   int i;
   char *p,b[1024];
-  addnt(str("$e"));
-  addt(str("$a"));
+  addt(str("$e"));
+  addnt(str("$a"));
   for(i=1;i<RN;i++) {
     strncpy(b,RA[i].r,1024);
     p=split(b,' '); if(!p) continue; addnt(str(p));
@@ -276,6 +420,9 @@ void pgbuild() {
       else { N=GN; for(k=GTN;k<TN;k++) TG[k]=s; }
     }
   }
+
+  firstgen();
+  followgen();
 }
 
 void pgprints(int i) {

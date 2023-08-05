@@ -11,5 +11,7 @@ int main(int argc, char **argv) {
   pgprint();
   //pgprintst();
   pgprintt();
+  //pgprintfirst();
+  //pgprintfollow();
   return 0;
 }

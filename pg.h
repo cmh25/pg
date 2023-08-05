@@ -17,5 +17,7 @@ void pgprints(int i);
 void pgprint();
 void pgprintst();
 void pgprintt();
+void pgprintfirst();
+void pgprintfollow();
 
 #endif /* PG_H */

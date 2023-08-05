@@ -310,15 +310,16 @@ static void goto_(int s, char *p) {
 
 static char* split(char *p, char c) {
     int s=0;
-    static char *q=0;
+    static char *q=0,z=0;
     if(p) q=p;
     else p=q;
+    if(z) { z=0; return p; }
     for(;*q;q++) {
       if(s==0) {
         if(*q=='<') s=1;
         else if(*q=='\'') s=2;
         else if(*q=='"') s=3;
-        else if(*q==c) { *q++=0; break; }
+        else if(*q==c) { *q++=0; if(!*q) z=1; break; }
       }
       else if(s==1) { if(*q=='>') s=0; }  /* inside <> */
       else if(s==2) { if(*q=='\'') s=0; } /* inside '' */

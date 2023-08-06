@@ -1,0 +1,6 @@
+# support for *, +, and []
+e > a* b
+a > b+ c
+b > [d] e
+d > n
+e > m

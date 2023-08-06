@@ -308,45 +308,105 @@ static void goto_(int s, char *p) {
   if(f) closure(SN);
 }
 
-static char* split(char *p, char c) {
-    int s=0;
-    static char *q=0,z=0;
-    if(p) q=p;
-    else p=q;
-    if(z) { z=0; return p; }
-    for(;*q;q++) {
+static char* split(char *p, char c, char **q) {
+    int i,n,s=0;
+    if(!p) p=*q;
+    if(!p) return 0;
+    n=strlen(p);
+    for(i=0;i<n;i++) {
       if(s==0) {
-        if(*q=='<') s=1;
-        else if(*q=='\'') s=2;
-        else if(*q=='"') s=3;
-        else if(*q==c) { *q++=0; if(!*q) z=1; break; }
+        if(p[i]=='<') s=1;
+        else if(p[i]=='\'') s=2;
+        else if(p[i]=='"') s=3;
+        else if(p[i]==c) break;
       }
-      else if(s==1) { if(*q=='>') s=0; }  /* inside <> */
-      else if(s==2) { if(*q=='\'') s=0; } /* inside '' */
-      else if(s==3) { if(*q=='"') s=0; }  /* inside "" */
+      else if(s==1) { if(p[i]=='>') s=0; }  /* inside <> */
+      else if(s==2) { if(p[i]=='\'') s=0; } /* inside '' */
+      else if(s==3) { if(p[i]=='"') s=0; }  /* inside "" */
     }
-    return p==q ? 0 : p;
+    if(i==n) *q=0;
+    else { *q=p+i; *(*q)++=0; }
+    return p;
 }
 
+static void star(char *q, char *s) {
+  char *t,*b,*z,*u,*v;
+  if(!s) return;
+  t=strdup(s);
+  u=split(t,' ',&z); 
+  while(u) {
+    if(1<strlen(u) && u[strlen(u)-1]=='*') {
+      v=strdup(u);
+      v[strlen(v)-1]=0;
+      sprintf(RA[RN].r,"%s %s",u,q);
+      cs(RA[RN++].r);
+      sprintf(RA[RN].r,"%s %s %s %s",u,q,u,v);
+      cs(RA[RN++].r);
+      free(v);
+    }
+    u=split(0,' ',&z);
+  }
+  free(t);
+}
+static void plus(char *q, char *s) {
+  char *t,*b,*z,*u,*v;
+  if(!s) return;
+  t=strdup(s);
+  u=split(t,' ',&z); 
+  while(u) {
+    if(1<strlen(u) && u[strlen(u)-1]=='+') {
+      v=strdup(u);
+      v[strlen(v)-1]=0;
+      sprintf(RA[RN].r,"%s %s %s",u,q,v);
+      cs(RA[RN++].r);
+      sprintf(RA[RN].r,"%s %s %s %s",u,q,u,v);
+      cs(RA[RN++].r);
+      free(v);
+    }
+    u=split(0,' ',&z);
+  }
+  free(t);
+}
+static void cond(char *q, char *s) {
+  char *t,*b,*z,*u,*v;
+  if(!s) return;
+  t=strdup(s);
+  u=split(t,' ',&z); 
+  while(u) {
+    if(1<strlen(u) && *u=='[' && u[strlen(u)-1]==']') {
+      v=strdup(u);
+      v[strlen(v)-1]=0;
+      sprintf(RA[RN].r,"%s %s",u,q);
+      cs(RA[RN++].r);
+      sprintf(RA[RN].r,"%s %s %s",u,q,v+1);
+      cs(RA[RN++].r);
+      free(v);
+    }
+    u=split(0,' ',&z);
+  }
+  free(t);
+}
 void pgread(char *g) {
   FILE *fp;
-  char b[1024],p[256],q[256],r[1024],*s;
+  char b[1024],p[256],q[256],r[1024],*s,*z;
   if(!(fp=fopen(g,"r"))) { fprintf(stderr,"error: file not found\n"); exit(1); }
   while(xfgets(b,1024,fp)) {
     if(!*b) continue;
     if('#'==*b) continue;
     if('|'==*b) strcpy(r,b+1);
     else {
-      strcpy(p,split(b,' '));
-      strcpy(q,split(0,' '));
+      strcpy(p,split(b,' ',&z));
+      strcpy(q,split(0,' ',&z));
       strcpy(r,b+strlen(p)+strlen(q)+2);
     }
-    s=split(r,'|');
-    sprintf(RA[RN].r,"%s %s %s",p,q,s?s:"");
-    cs(RA[RN++].r);
-    while((s=split(0,'|'))) {
+    s=split(r,'|',&z);
+    while(s) {
       sprintf(RA[RN].r,"%s %s %s",p,q,s?s:"");
       cs(RA[RN++].r);
+      star(q,s);
+      plus(q,s);
+      cond(q,s);
+      s=split(0,'|',&z);
     }
   }
   fclose(fp);
@@ -354,21 +414,21 @@ void pgread(char *g) {
 
 void pgparse() {
   int i;
-  char *p,b[1024];
+  char *p,b[1024],*z;
   addt(str("$e"));
   addnt(str("$a"));
   for(i=1;i<RN;i++) {
     strncpy(b,RA[i].r,1024);
-    p=split(b,' '); if(!p) continue; addnt(str(p));
+    p=split(b,' ',&z); if(!p) continue; addnt(str(p));
   }
   for(i=1;i<RN;i++) {
     strncpy(b,RA[i].r,1024);
-    p=split(b,' '); if(!p) continue; RA[i].lhs=str(p);
-    p=split(0,' '); if(!p) continue; RA[i].op=str(p);
-    p=split(0,' '); while(p) {
+    p=split(b,' ',&z); if(!p) continue; RA[i].lhs=str(p);
+    p=split(0,' ',&z); if(!p) continue; RA[i].op=str(p);
+    p=split(0,' ',&z); while(p) {
       RA[i].rhs[RA[i].rhsi++]=str(p);
       addt(str(p));
-      p=split(0,' ');
+      p=split(0,' ',&z);
     }
   }
   RA[0].lhs=str("$a");

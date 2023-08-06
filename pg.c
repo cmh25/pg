@@ -569,7 +569,7 @@ void pgprintt2() {
   cn=TC+NTC;
   v=malloc(sizeof(void*)*cn);
   t=(int*)malloc(sizeof(int)*cn);
-  s=(int*)malloc(sizeof(int)*cn);
+  s=(int*)malloc(sizeof(int)*SN);
   c=(char**)malloc(sizeof(char*)*cn);
   for(i=0;i<SN;i++) s[i]=i;
   t[0]=1; for(i=1;i<cn;i++) t[i]=4;
@@ -577,13 +577,21 @@ void pgprintt2() {
   for(j=1,i=0;i<TC;i++) c[j++]=T[i];
   for(i=1;i<NTC;i++) c[j++]=NT[i];
   v[0]=s;
-  for(j=1,i=1;i<=cn;i++,j++) {
+  for(j=1,i=1;i<cn;i++,j++) {
     v[j]=(char**)malloc(sizeof(char*)*SN);
     for(k=0;k<SN;k++) ((char**)v[j])[k]=getaction(k,c[i]);
   }
 
   a=show(cn,SN,c,t,v);
   if(a) { printf("\n%s",a); free(a); }
+  for(j=1,i=1;i<cn;i++,j++) {
+    for(k=0;k<SN;k++) free(((char**)v[j])[k]);
+    free(v[j]);
+  }
+  free(t);
+  free(s);
+  free(c);
+  free(v);
 }
 
 static char TL[256][256];

@@ -3,19 +3,31 @@
 #include <stdlib.h>
 #include <string.h>
 
+void usage(char *c) {
+  printf("usage: %s <file> [pretty] [genhc]\n",c);
+  printf("   <file>: grammar definition\n");
+  printf(" [pretty]: pretty pring action table\n");
+  printf("  [genhc]: generate p.h and p.c\n");
+  printf("  [first]: print first() for each token\n");
+  printf(" [follow]: print follow() for each token\n");
+}
+
+int inargv(int c, char **argv, char *a) {
+  while(--c) if(!strcmp(argv[c],a)) return 1;
+  return 0;
+}
+
 int main(int argc, char **argv) {
-  if(argc<2) { printf("usage: %s <file> [pretty]\n", argv[0]); exit(0); }
+  if(argc<2) { usage(argv[0]); exit(1); }
   pgread(argv[1]);
   pgparse();
   pgreport();
   pgbuild();
   pgprint();
-  //pgprintst();
-  if(argc<3) pgprintt();
-  else if(!strcmp(argv[2],"pretty")) pgprintt2();
-  //pgprintfirst();
-  //pgprintfollow();
-  //pgh();
-  //pgc();
+  if(inargv(argc,argv,"pretty")) pgprintt2();
+  else pgprintt();
+  if(inargv(argc,argv,"genhc")) { pgh(); pgc(); }
+  if(inargv(argc,argv,"first")) pgprintfirst();
+  if(inargv(argc,argv,"follow")) pgprintfollow();
   return 0;
 }

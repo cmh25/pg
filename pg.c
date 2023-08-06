@@ -324,7 +324,7 @@ static char* split(char *p, char c, char **q) {
 }
 
 static void star(char *q, char *s) {
-  char *t,*b,*z,*u,*v;
+  char *t,*z,*u,*v;
   if(!s) return;
   t=strdup(s);
   u=split(t,' ',&z); 
@@ -343,7 +343,7 @@ static void star(char *q, char *s) {
   free(t);
 }
 static void plus(char *q, char *s) {
-  char *t,*b,*z,*u,*v;
+  char *t,*z,*u,*v;
   if(!s) return;
   t=strdup(s);
   u=split(t,' ',&z); 
@@ -362,7 +362,7 @@ static void plus(char *q, char *s) {
   free(t);
 }
 static void question(char *q, char *s) {
-  char *t,*b,*z,*u,*v;
+  char *t,*z,*u,*v;
   if(!s) return;
   t=strdup(s);
   u=split(t,' ',&z); 
@@ -381,7 +381,7 @@ static void question(char *q, char *s) {
   free(t);
 }
 static void cond(char *q, char *s) {
-  char *t,*b,*z,*u,*v;
+  char *t,*z,*u,*v;
   if(!s) return;
   t=strdup(s);
   u=split(t,' ',&z); 
@@ -586,16 +586,34 @@ void pgprintt2() {
   if(a) { printf("\n%s",a); free(a); }
 }
 
+static char TL[256][256];
+static char NTL[256][256];
+static int TLE[256];
+static int NTLE[256];
 void pgh() {
-  int i,n=256;
+  int i,j=0,n=256;
   FILE *fp;
   if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
   fprintf(fp,"#ifndef P_H\n#define P_H\n");
   for(i=0;i<TC;i++) {
-    if(*T[i]=='\'') fprintf(fp,"#define T%03d %3d /* %s */\n",T[i][1],T[i][1],T[i]);
-    else { fprintf(fp,"#define T%03d %3d /* %s */\n",n,n,T[i]); ++n; }
+    if(*T[i]=='\'') {
+      TLE[j]=T[i][1];
+      sprintf(TL[j++],"%d",T[i][1]);
+      fprintf(fp,"#define T%03d %3d /* %s */\n",T[i][1],T[i][1],T[i]);
+    }
+    else {
+      TLE[j]=n;
+      sprintf(TL[j++],"T%03d",n);
+      fprintf(fp,"#define T%03d %3d /* %s */\n",n,n,T[i]);
+      ++n;
+    }
   }
-  for(i=0;i<NTC;i++) { fprintf(fp,"#define N%03d %d /* %s */\n",n,n,NT[i]); ++n; }
+  for(j=0,i=0;i<NTC;i++) {
+    NTLE[j]=n;
+    sprintf(NTL[j++],"N%03d",n);
+    fprintf(fp,"#define N%03d %d /* %s */\n",n,n,NT[i]);
+    ++n;
+  }
   fprintf(fp,"#endif /* P_H */\n");
   fclose(fp);
 }
@@ -611,18 +629,29 @@ static void a2c(FILE *fp, char *k, int *v, int n) {
 }
 
 void pgc() {
-  int i,j,k,n=256,*t;
+  int i,j,k,*t,n;
   FILE *fp;
   if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
   fprintf(fp,"#include \"p.h\"\n\n");
 
-  for(j=0,i=0;i<TC;i++) if(*T[i]!='\'') j++;
-  j+=256+NTC;
+  for(j=256,i=0;i<TC;i++) if(*T[i]!='\'') j++;
+  j+=NTC;
   t=malloc(sizeof(int)*j);
-  fprintf(fp,"int sr[%d]={\n",SN);
+  fprintf(fp,"int sr[%d][%d]={\n",SN,j);
   for(i=0;i<SN;i++) {
     fprintf(fp,"{");
-    memset(t,0,j*sizeof(int));
+    memset(t,-1,j*sizeof(int));
+    for(k=0;k<TN;k++) {
+      if(TS[k]!=i) continue;
+      if(ist(TT[k])) {
+        for(n=0;n<TC;n++) if(T[n]==TT[k]) break;
+        t[TLE[n]]=k;
+      }
+      else {
+        for(n=0;n<NTC;n++) if(NT[n]==TT[k]) break;
+        t[NTLE[n]]=k;
+      }
+    }
     for(k=0;k<j;k++) fprintf(fp,"%d%s",t[k],k==j-1?"":",");
     fprintf(fp,"}%s\n",i==SN-1?"":",");
   }
@@ -630,17 +659,18 @@ void pgc() {
 
   a2c(fp,"TS",TS,TN);
 
-  /* this is all wrong **************************************/
   fprintf(fp,"int TT[%d]={",TN);
   for(i=0;i<TN;i++) {
     if(ist(TT[i])) {
-      //fprintf(fp,"T%03d",256+j);
-      fprintf(fp,"%s%s",TT[i],i==TN-1?"":",");
+      for(j=0;j<TC;j++) if(T[j]==TT[i]) break;
+      fprintf(fp,"%s%s",TL[j],i==TN-1?"":",");
     }
-    else fprintf(fp,"N%03d%s",256+i,i==TN-1?"":",");
+    else {
+      for(j=0;j<NTC;j++) if(NT[j]==TT[i]) break;
+      fprintf(fp,"%s%s",NTL[j],i==TN-1?"":",");
+    }
   }
   fprintf(fp,"};\n");
-  /* this is all wrong **************************************/
 
   a2c(fp,"TA",TA,TN);
   a2c(fp,"TG",TG,TN);

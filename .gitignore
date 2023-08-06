@@ -7,3 +7,5 @@ pg
 *.swo
 test/*.out
 test/*.diff
+p.h
+p.c

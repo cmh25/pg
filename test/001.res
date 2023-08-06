@@ -1,5 +1,5 @@
 n: $a <Lines> <Statements> <Statement> <Access> <ID List> <Value List> <Constant List> <Integer List> <Expression List> <Print List> <Expression> <And Exp> <Not Exp> <Compare Exp> <Add Exp> <Mult Exp> <Negate Exp> <Power Exp> <Value> <Constant>
-t: $e Integer NewLine ':' CLOSE '#' DATA DIM ID '(' ')' END FOR '=' TO STEP GOTO GOSUB IF THEN INPUT ',' LET Id NEXT OPEN AS POKE PRINT <Print list> READ RETURN RESTORE RUN STOP SYS WAIT Remark OUPUT ';' OR AND NOT '<>' '><' '>' '>=' '<' '<=' '+' '-' '*' '/' '^' String Real
+t: Integer NewLine ':' CLOSE '#' DATA DIM ID '(' ')' END FOR '=' TO STEP GOTO GOSUB IF THEN INPUT ',' LET Id NEXT OPEN AS POKE PRINT <Print list> READ RETURN RESTORE RUN STOP SYS WAIT Remark OUPUT ';' OR AND NOT '<>' '><' '>' '>=' '<' '<=' '+' '-' '*' '/' '^' String Real $e
 -------------------------
  0. $a ::= <Lines>
  1. <Lines> ::= Integer <Statements> NewLine <Lines>

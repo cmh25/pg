@@ -134,16 +134,10 @@ static void firstgen() {
 static int first(char **p, int c) {
   int i,j,n,k=0,b=0,m,f;
   for(i=0;i<c;i++) {
-    if(ist(p[i])) {
-      F[k++]=p[i];
-      return k;
-    }
+    if(ist(p[i])) { F[k++]=p[i]; return k; }
     n=firsti(p[i]);
     for(j=0;j<FC[n];j++) {
-      if(!FV[n][j]) {
-        F[k++]=FV[n][j];
-        b=1;
-      }
+      if(!FV[n][j]) { F[k++]=FV[n][j]; b=1; }
       else {
         f=0; for(m=0;m<k;m++) if(F[m]==FV[n][j]) f=1;
         if(!f) F[k++]=FV[n][j];
@@ -435,13 +429,12 @@ void pgread(char *g) {
 void pgparse() {
   int i;
   char *p,b[1024],*z;
-  addt(str("$e"));
   addnt(str("$a"));
   for(i=1;i<RN;i++) {
     strncpy(b,RA[i].r,1024);
     p=split(b,' ',&z); if(!p) continue; addnt(str(p));
   }
-  for(i=1;i<RN;i++) {
+  for(i=0;i<RN;i++) {
     strncpy(b,RA[i].r,1024);
     p=split(b,' ',&z); if(!p) continue; RA[i].lhs=str(p);
     p=split(0,' ',&z); if(!p) continue; RA[i].op=str(p);
@@ -451,6 +444,7 @@ void pgparse() {
       p=split(0,' ',&z);
     }
   }
+  addt(str("$e"));
   RA[0].lhs=str("$a");
   RA[0].op=RA[1].op;
   RA[0].rhs[RA[0].rhsi++]=RA[1].lhs;
@@ -548,4 +542,111 @@ void pgprintt() {
   void *v[] = {TS,TT,TA,TG,TR};
   char *a = show(5,TN,c,t,v);
   if(a) { printf("%s",a); free(a); }
+}
+
+static char* getaction(int s, char *t) {
+  int i;
+  char *r;
+  for(i=0;i<TN;i++) {
+    if(TS[i]!=s) continue;
+    if(TT[i]==t) break;
+  }
+  r=malloc(8);
+  if(i==TN) r[0]=0;
+  else if(TA[i]==0) {
+    if(TR[i]) sprintf(r,"r%d",TR[i]);
+    else if(TA[i]==0 && TG[i]==0) sprintf(r,"acc");
+    else r[0]=0;
+  }
+  else if(TA[i]==1) sprintf(r,"s%d",TG[i]);
+  else if(TA[i]==2) sprintf(r,"%2d",TG[i]);
+  return r;
+}
+void pgprintt2() {
+  int i,j,k,*s,*t,cn;
+  char *a,**c;
+  void **v;
+  cn=TC+NTC;
+  v=malloc(sizeof(void*)*cn);
+  t=(int*)malloc(sizeof(int)*cn);
+  s=(int*)malloc(sizeof(int)*cn);
+  c=(char**)malloc(sizeof(char*)*cn);
+  for(i=0;i<SN;i++) s[i]=i;
+  t[0]=1; for(i=1;i<cn;i++) t[i]=4;
+  c[0]="state";
+  for(j=1,i=0;i<TC;i++) c[j++]=T[i];
+  for(i=1;i<NTC;i++) c[j++]=NT[i];
+  v[0]=s;
+  for(j=1,i=1;i<=cn;i++,j++) {
+    v[j]=(char**)malloc(sizeof(char*)*SN);
+    for(k=0;k<SN;k++) ((char**)v[j])[k]=getaction(k,c[i]);
+  }
+
+  a=show(cn,SN,c,t,v);
+  if(a) { printf("\n%s",a); free(a); }
+}
+
+void pgh() {
+  int i,n=256;
+  FILE *fp;
+  if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
+  fprintf(fp,"#ifndef P_H\n#define P_H\n");
+  for(i=0;i<TC;i++) {
+    if(*T[i]=='\'') fprintf(fp,"#define T%03d %3d /* %s */\n",T[i][1],T[i][1],T[i]);
+    else { fprintf(fp,"#define T%03d %3d /* %s */\n",n,n,T[i]); ++n; }
+  }
+  for(i=0;i<NTC;i++) { fprintf(fp,"#define N%03d %d /* %s */\n",n,n,NT[i]); ++n; }
+  fprintf(fp,"#endif /* P_H */\n");
+  fclose(fp);
+}
+
+static void a2c(FILE *fp, char *k, int *v, int n) {
+  int i,b=0;
+  fprintf(fp,"int %s[%d]={",k,n);
+  for(b=0,i=0;i<n;i++) {
+    if(b) fprintf(fp,","); else b=1;
+    fprintf(fp,"%d",v[i]);
+  }
+  fprintf(fp,"};\n");
+}
+
+void pgc() {
+  int i,j,k,n=256,*t;
+  FILE *fp;
+  if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
+  fprintf(fp,"#include \"p.h\"\n\n");
+
+  for(j=0,i=0;i<TC;i++) if(*T[i]!='\'') j++;
+  j+=256+NTC;
+  t=malloc(sizeof(int)*j);
+  fprintf(fp,"int sr[%d]={\n",SN);
+  for(i=0;i<SN;i++) {
+    fprintf(fp,"{");
+    memset(t,0,j*sizeof(int));
+    for(k=0;k<j;k++) fprintf(fp,"%d%s",t[k],k==j-1?"":",");
+    fprintf(fp,"}%s\n",i==SN-1?"":",");
+  }
+  fprintf(fp,"};\n\n");
+
+  a2c(fp,"TS",TS,TN);
+
+  /* this is all wrong **************************************/
+  fprintf(fp,"int TT[%d]={",TN);
+  for(i=0;i<TN;i++) {
+    if(ist(TT[i])) {
+      //fprintf(fp,"T%03d",256+j);
+      fprintf(fp,"%s%s",TT[i],i==TN-1?"":",");
+    }
+    else fprintf(fp,"N%03d%s",256+i,i==TN-1?"":",");
+  }
+  fprintf(fp,"};\n");
+  /* this is all wrong **************************************/
+
+  a2c(fp,"TA",TA,TN);
+  a2c(fp,"TG",TG,TN);
+  a2c(fp,"TR",TR,TN);
+
+  fprintf(fp,"\n");
+  for(i=0;i<RN;i++) fprintf(fp,"void r%03d(void *v) { /* %s */\n}\n",i,RA[i].r);
+  fclose(fp);
 }

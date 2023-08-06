@@ -1,5 +1,5 @@
 n: $a a b e
-t: $e c d f g h i j k
+t: c d f g h i j k $e
 -------------------------
  0. $a > a
  1. a > b

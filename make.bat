@@ -11,6 +11,7 @@ pg test\004 > test\004.out
 pg test\005 > test\005.out
 pg test\006 > test\006.out
 pg test\007 > test\007.out
+pg test\008 > test\008.out
 comp /a /m test\000.res test\000.out >NUL
 if "%errorlevel%"=="0" (echo 000: pass) else echo 000: fail *****
 comp /a /m test\001.res test\001.out >NUL
@@ -27,3 +28,5 @@ comp /a /m test\006.res test\006.out >NUL
 if "%errorlevel%"=="0" (echo 006: pass) else echo 006: fail *****
 comp /a /m test\007.res test\007.out >NUL
 if "%errorlevel%"=="0" (echo 007: pass) else echo 007: fail *****
+comp /a /m test\008.res test\008.out >NUL
+if "%errorlevel%"=="0" (echo 008: pass) else echo 008: fail *****

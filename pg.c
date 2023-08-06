@@ -367,6 +367,25 @@ static void plus(char *q, char *s) {
   }
   free(t);
 }
+static void question(char *q, char *s) {
+  char *t,*b,*z,*u,*v;
+  if(!s) return;
+  t=strdup(s);
+  u=split(t,' ',&z); 
+  while(u) {
+    if(1<strlen(u) && u[strlen(u)-1]=='?') {
+      v=strdup(u);
+      v[strlen(v)-1]=0;
+      sprintf(RA[RN].r,"%s %s",u,q);
+      cs(RA[RN++].r);
+      sprintf(RA[RN].r,"%s %s %s",u,q,v);
+      cs(RA[RN++].r);
+      free(v);
+    }
+    u=split(0,' ',&z);
+  }
+  free(t);
+}
 static void cond(char *q, char *s) {
   char *t,*b,*z,*u,*v;
   if(!s) return;
@@ -405,6 +424,7 @@ void pgread(char *g) {
       cs(RA[RN++].r);
       star(q,s);
       plus(q,s);
+      question(q,s);
       cond(q,s);
       s=split(0,'|',&z);
     }

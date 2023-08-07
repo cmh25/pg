@@ -665,6 +665,7 @@ void pgc() {
     fprintf(fp,"}%s\n",i==SN-1?"":",");
   }
   fprintf(fp,"};\n\n");
+  free(t);
 
   a2c(fp,"TS",TS,TN);
 

@@ -640,7 +640,8 @@ void pgc() {
   int i,j,k,*t,n;
   FILE *fp;
   if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
-  fprintf(fp,"#include \"p.h\"\n\n");
+  fprintf(fp,"#include \"p.h\"\n");
+  fprintf(fp,"#include <stdio.h>\n\n");
 
   for(j=256,i=0;i<TC;i++) if(*T[i]!='\'') j++;
   j+=NTC;
@@ -685,6 +686,57 @@ void pgc() {
   a2c(fp,"TR",TR,TN);
 
   fprintf(fp,"\n");
-  for(i=0;i<RN;i++) fprintf(fp,"void r%03d(void *v) { /* %s */\n}\n",i,RA[i].r);
+  fprintf(fp,"int RPOP[%d]={",RN);
+  for(i=0;i<RN;i++) fprintf(fp,"%d%s",RA[i].rhsi,i==RN-1?"":",");
+  fprintf(fp,"};\n");
+  fprintf(fp,"int LEFT[%d]={",RN);
+  for(i=0;i<RN;i++) {
+    for(j=0;j<NTC;j++) if(NT[j]==RA[i].lhs) break;
+    fprintf(fp,"%s%s",NTL[j],i==RN-1?"":",");
+  }
+  fprintf(fp,"};\n");
+
+  fprintf(fp,"\n");
+  for(i=0;i<RN;i++) fprintf(fp,"void r%03d(void *v) { /* %s */\n  printf(\"r%03d\\n\");\n}\n",i,RA[i].r,i);
+
+  fprintf(fp,"\n");
+  fprintf(fp,"void (*R[%d])(void *v)={",RN);
+  for(i=0;i<RN;i++) fprintf(fp,"r%03d%s",i,i==RN-1?"":",");
+  fprintf(fp,"};\n");
+
+  fprintf(fp,"\n"
+"void parse(int *t, int *v) {\n"
+"  int i=0,j,r;\n"
+"  int ss[1024],si=-1;\n"
+"  int st[1024],ti=-1;\n"
+"  ss[++si]=0;\n"
+"  for(;;) {\n"
+"    j=sr[ss[si]][t[i]];\n"
+"    if(TA[j]) { /* shift */\n"
+"      ss[++si]=TG[j];\n"
+"      st[++ti]=t[i++];\n"
+"    } else { /* reduce */\n"
+"      r=TR[j];\n"
+"      (*R[r])(0);\n"
+"      if(!r) return; /* accept */\n"
+"      si-=RPOP[r];\n"
+"      ti-=RPOP[r];\n"
+"      st[++ti]=LEFT[r];\n"
+"      j=sr[ss[si]][st[ti]];\n"
+"      ss[++si]=TG[j];\n"
+"    }\n"
+"  }\n"
+"}\n"
+"\n"
+"/* example main() for test/000 */\n"
+"/*\n"
+"int main() {\n"
+"  int t[4]={T256,'+',T256,T257}; // n + n $e\n"
+"  int v[4]={1,0,2,0};\n"
+"  parse(t,v);\n"
+"  return 0;\n"
+"}\n"
+"*/\n");
+
   fclose(fp);
 }

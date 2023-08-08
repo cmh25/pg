@@ -599,27 +599,20 @@ static char NTL[256][256];
 static int TLE[256];
 static int NTLE[256];
 void pgh() {
-  int i,j=0,n=256;
+  int i,n=0;
   FILE *fp;
   if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
   fprintf(fp,"#ifndef P_H\n#define P_H\n");
   for(i=0;i<TC;i++) {
-    if(*T[i]=='\'') {
-      TLE[j]=T[i][1];
-      sprintf(TL[j++],"%d",T[i][1]);
-      fprintf(fp,"#define T%03d %3d /* %s */\n",T[i][1],T[i][1],T[i]);
-    }
-    else {
-      TLE[j]=n;
-      sprintf(TL[j++],"T%03d",n);
-      fprintf(fp,"#define T%03d %3d /* %s */\n",n,n,T[i]);
-      ++n;
-    }
+    TLE[i]=n;
+    sprintf(TL[i],"T%03d",n);
+    fprintf(fp,"#define T%03d %3d /* %s */\n",n,n,T[i]);
+    ++n;
   }
-  for(j=0,i=0;i<NTC;i++) {
-    NTLE[j]=n;
-    sprintf(NTL[j++],"N%03d",n);
-    fprintf(fp,"#define N%03d %d /* %s */\n",n,n,NT[i]);
+  for(i=0;i<NTC;i++) {
+    NTLE[i]=n;
+    sprintf(NTL[i],"N%03d",n);
+    fprintf(fp,"#define N%03d %3d /* %s */\n",n,n,NT[i]);
     ++n;
   }
   fprintf(fp,"#endif /* P_H */\n");
@@ -643,8 +636,7 @@ void pgc() {
   fprintf(fp,"#include \"p.h\"\n");
   fprintf(fp,"#include <stdio.h>\n\n");
 
-  for(j=256,i=0;i<TC;i++) if(*T[i]!='\'') j++;
-  j+=NTC;
+  j=TC+NTC;
   t=malloc(sizeof(int)*j);
   fprintf(fp,"int sr[%d][%d]={\n",SN,j);
   for(i=0;i<SN;i++) {
@@ -732,7 +724,7 @@ void pgc() {
 "/* example main() for test/000 */\n"
 "/*\n"
 "int main() {\n"
-"  int t[4]={T256,'+',T256,T257}; // n + n $e\n"
+"  int t[4]={T004,T000,T004,T005}; // n + n $e\n"
 "  int v[4]={1,0,2,0};\n"
 "  parse(t,v);\n"
 "  return 0;\n"

@@ -34,5 +34,5 @@ if "%errorlevel%"=="0" (echo 008: pass) else echo 008: fail *****
 exit /b 0
 :ex
 cd ex
-cd 000; cl main.c p.c /Fe:p cd ..
+cd 000 & cl main.c p.c /Fe:p & cd ..
 cd ..

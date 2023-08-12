@@ -664,27 +664,11 @@ void pgc() {
   fprintf(fp,"};\n\n");
   free(t);
 
-  a2c(fp,"TS",TS,TN);
-
-  fprintf(fp,"static int TT[%d]={",TN);
-  for(i=0;i<TN;i++) {
-    if(ist(TT[i])) {
-      for(j=0;j<TC;j++) if(T[j]==TT[i]) break;
-      fprintf(fp,"%s%s",TL[j],i==TN-1?"":",");
-    }
-    else {
-      for(j=0;j<NTC;j++) if(NT[j]==TT[i]) break;
-      fprintf(fp,"%s%s",NTL[j],i==TN-1?"":",");
-    }
-  }
-  fprintf(fp,"};\n");
-
   a2c(fp,"TA",TA,TN);
   a2c(fp,"TG",TG,TN);
   a2c(fp,"TR",TR,TN);
 
-  fprintf(fp,"\n");
-  fprintf(fp,"static int RPOP[%d]={",RN);
+  fprintf(fp,"\nstatic int RPOP[%d]={",RN);
   for(i=0;i<RN;i++) fprintf(fp,"%d%s",RA[i].rhsi,i==RN-1?"":",");
   fprintf(fp,"};\n");
   fprintf(fp,"static int LEFT[%d]={",RN);

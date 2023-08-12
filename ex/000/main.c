@@ -6,7 +6,7 @@
 char b[256],*p=b;;
 
 static void gn() {
-  unsigned char *s=p,e;
+  char *s=p;
   if(*p=='-')p++;
   while(*p&&isdigit(*p++));
   p--;

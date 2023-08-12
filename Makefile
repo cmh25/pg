@@ -1,6 +1,5 @@
 CC=gcc
-#CFLAGS=-O3
-CFLAGS=-O3 -Wall
+CFLAGS=-O2
 
 all: pg
 

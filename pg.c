@@ -414,7 +414,7 @@ void pgread(char *g) {
     }
     s=split(r,'|',&z);
     while(s) {
-      sprintf(RA[RN].r,"%s %s %s",p,q,s?s:"");
+      snprintf(RA[RN].r,1024,"%s %s %s",p,q,s?s:"");
       cs(RA[RN++].r);
       star(q,s);
       plus(q,s);
@@ -431,11 +431,11 @@ void pgparse() {
   char *p,b[1024],*z;
   addnt(str("$a"));
   for(i=1;i<RN;i++) {
-    strncpy(b,RA[i].r,1024);
+    strcpy(b,RA[i].r);
     p=split(b,' ',&z); if(!p) continue; addnt(str(p));
   }
   for(i=0;i<RN;i++) {
-    strncpy(b,RA[i].r,1024);
+    strcpy(b,RA[i].r);
     p=split(b,' ',&z); if(!p) continue; RA[i].lhs=str(p);
     p=split(0,' ',&z); if(!p) continue; RA[i].op=str(p);
     p=split(0,' ',&z); while(p) {

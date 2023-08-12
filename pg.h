@@ -2,7 +2,7 @@
 #define PG_H
 
 typedef struct {
-  char r[256];
+  char r[1024];
   char *lhs;
   char *op;
   char *rhs[32];

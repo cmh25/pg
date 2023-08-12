@@ -1,5 +1,6 @@
 @echo off
 if "%1%"=="test" goto test
+if "%1%"=="ex" goto ex 
 cl main.c pg.c show.c /Fe:pg
 exit /b 0
 :test
@@ -30,3 +31,8 @@ comp /a /m test\007.res test\007.out >NUL
 if "%errorlevel%"=="0" (echo 007: pass) else echo 007: fail *****
 comp /a /m test\008.res test\008.out >NUL
 if "%errorlevel%"=="0" (echo 008: pass) else echo 008: fail *****
+exit /b 0
+:ex
+cd ex
+cd 000; cl main.c p.c /Fe:p cd ..
+cd ..

@@ -602,7 +602,7 @@ void pgh() {
   int i,n=0;
   FILE *fp;
   if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
-  fprintf(fp,"#ifndef P_H\n#define P_H\n");
+  fprintf(fp,"#ifndef P_H\n#define P_H\n\n");
   for(i=0;i<TC;i++) {
     TLE[i]=n;
     sprintf(TL[i],"T%03d",n);
@@ -615,13 +615,18 @@ void pgh() {
     fprintf(fp,"#define N%03d %3d /* %s */\n",n,n,NT[i]);
     ++n;
   }
-  fprintf(fp,"#endif /* P_H */\n");
+  fprintf(fp,"\n");
+  fprintf(fp,"extern int pgta[512]; /* tokens */\n");
+  fprintf(fp,"extern int pgva[512]; /* values */\n");
+  fprintf(fp,"extern int pgi;       /* tv index */\n");
+  fprintf(fp,"void parse();\n");
+  fprintf(fp,"\n#endif /* P_H */\n");
   fclose(fp);
 }
 
 static void a2c(FILE *fp, char *k, int *v, int n) {
   int i,b=0;
-  fprintf(fp,"int %s[%d]={",k,n);
+  fprintf(fp,"static int %s[%d]={",k,n);
   for(b=0,i=0;i<n;i++) {
     if(b) fprintf(fp,","); else b=1;
     fprintf(fp,"%d",v[i]);
@@ -638,7 +643,7 @@ void pgc() {
 
   j=TC+NTC;
   t=malloc(sizeof(int)*j);
-  fprintf(fp,"int sr[%d][%d]={\n",SN,j);
+  fprintf(fp,"static int sr[%d][%d]={\n",SN,j);
   for(i=0;i<SN;i++) {
     fprintf(fp,"{");
     memset(t,-1,j*sizeof(int));
@@ -661,7 +666,7 @@ void pgc() {
 
   a2c(fp,"TS",TS,TN);
 
-  fprintf(fp,"int TT[%d]={",TN);
+  fprintf(fp,"static int TT[%d]={",TN);
   for(i=0;i<TN;i++) {
     if(ist(TT[i])) {
       for(j=0;j<TC;j++) if(T[j]==TT[i]) break;
@@ -679,57 +684,50 @@ void pgc() {
   a2c(fp,"TR",TR,TN);
 
   fprintf(fp,"\n");
-  fprintf(fp,"int RPOP[%d]={",RN);
+  fprintf(fp,"static int RPOP[%d]={",RN);
   for(i=0;i<RN;i++) fprintf(fp,"%d%s",RA[i].rhsi,i==RN-1?"":",");
   fprintf(fp,"};\n");
-  fprintf(fp,"int LEFT[%d]={",RN);
+  fprintf(fp,"static int LEFT[%d]={",RN);
   for(i=0;i<RN;i++) {
     for(j=0;j<NTC;j++) if(NT[j]==RA[i].lhs) break;
     fprintf(fp,"%s%s",NTL[j],i==RN-1?"":",");
   }
   fprintf(fp,"};\n");
 
-  fprintf(fp,"\n");
-  for(i=0;i<RN;i++) fprintf(fp,"void r%03d(void *v) { /* %s */\n  printf(\"r%03d\\n\");\n}\n",i,RA[i].r,i);
+  fprintf(fp,"\n"
+"int pgta[512]; /* tokens */\n"
+"int pgva[512]; /* values */\n"
+"int pgi=0;     /* tv index */\n"
+"static int vv[512],vi=-1; /* value stack */\n\n");
 
-  fprintf(fp,"\n");
-  fprintf(fp,"void (*R[%d])(void *v)={",RN);
+  for(i=0;i<RN;i++) fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
+
+  fprintf(fp,"\nstatic void (*R[%d])()={",RN);
   for(i=0;i<RN;i++) fprintf(fp,"r%03d%s",i,i==RN-1?"":",");
   fprintf(fp,"};\n");
 
   fprintf(fp,"\n"
-"void parse(int *t, int *v) {\n"
-"  int i=0,j,r;\n"
-"  int ss[1024],si=-1;\n"
-"  int st[1024],ti=-1;\n"
-"  ss[++si]=0;\n"
+"void parse() {\n"
+"  int i=0,j,r,ss[1024],st[1024],si=0;\n"
+"  vi=-1;\n"
+"  ss[si]=0;\n"
 "  for(;;) {\n"
-"    j=sr[ss[si]][t[i]];\n"
-"    if(TA[j]) { /* shift */\n"
+"    j=sr[ss[si]][pgta[i]];\n"
+"    if(TA[j]) {      /* shift */\n"
 "      ss[++si]=TG[j];\n"
-"      st[++ti]=t[i++];\n"
-"    } else { /* reduce */\n"
+"      st[si]=pgta[i];\n"
+"      vv[++vi]=pgva[i++];\n"
+"    } else {         /* reduce */\n"
 "      r=TR[j];\n"
-"      (*R[r])(0);\n"
+"      (*R[r])();\n"
 "      if(!r) return; /* accept */\n"
 "      si-=RPOP[r];\n"
-"      ti-=RPOP[r];\n"
-"      st[++ti]=LEFT[r];\n"
-"      j=sr[ss[si]][st[ti]];\n"
+"      j=sr[ss[si]][LEFT[r]];\n"
 "      ss[++si]=TG[j];\n"
+"      st[si]=LEFT[r];\n"
 "    }\n"
 "  }\n"
-"}\n"
-"\n"
-"/* example main() for test/000 */\n"
-"/*\n"
-"int main() {\n"
-"  int t[4]={T004,T000,T004,T005}; // n + n $e\n"
-"  int v[4]={1,0,2,0};\n"
-"  parse(t,v);\n"
-"  return 0;\n"
-"}\n"
-"*/\n");
+"}\n");
 
   fclose(fp);
 }

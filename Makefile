@@ -10,7 +10,11 @@ pg: main.c pg.c pg.h show.c show.h pg.o show.o
 test: pg
 	$(MAKE) -C test
 
+ex: pg
+	$(MAKE) -C ex
+
 clean:
+	$(MAKE) -C ex clean
 	rm -f pg *.o
 
-.PHONY: test
+.PHONY: test ex

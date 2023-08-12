@@ -1,7 +1,7 @@
 #include "p.h"
 #include <stdio.h>
 
-static int sr[12][10]={
+static int SR[12][10]={
 {-1,-1,3,-1,4,-1,-1,0,1,2},
 {6,-1,-1,-1,-1,5,-1,-1,-1,-1},
 {8,10,-1,9,-1,7,-1,-1,-1,-1},
@@ -64,7 +64,7 @@ void parse() {
   vi=-1;
   ss[si]=0;
   for(;;) {
-    j=sr[ss[si]][pgta[i]];
+    j=SR[ss[si]][pgta[i]];
     if(TA[j]) {      /* shift */
       ss[++si]=TG[j];
       st[si]=pgta[i];
@@ -74,7 +74,7 @@ void parse() {
       (*R[r])();
       if(!r) return; /* accept */
       si-=RPOP[r];
-      j=sr[ss[si]][LEFT[r]];
+      j=SR[ss[si]][LEFT[r]];
       ss[++si]=TG[j];
       st[si]=LEFT[r];
     }

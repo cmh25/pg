@@ -643,7 +643,7 @@ void pgc() {
 
   j=TC+NTC;
   t=malloc(sizeof(int)*j);
-  fprintf(fp,"static int sr[%d][%d]={\n",SN,j);
+  fprintf(fp,"static int SR[%d][%d]={\n",SN,j);
   for(i=0;i<SN;i++) {
     fprintf(fp,"{");
     memset(t,-1,j*sizeof(int));
@@ -696,7 +696,7 @@ void pgc() {
 "  vi=-1;\n"
 "  ss[si]=0;\n"
 "  for(;;) {\n"
-"    j=sr[ss[si]][pgta[i]];\n"
+"    j=SR[ss[si]][pgta[i]];\n"
 "    if(TA[j]) {      /* shift */\n"
 "      ss[++si]=TG[j];\n"
 "      st[si]=pgta[i];\n"
@@ -706,7 +706,7 @@ void pgc() {
 "      (*R[r])();\n"
 "      if(!r) return; /* accept */\n"
 "      si-=RPOP[r];\n"
-"      j=sr[ss[si]][LEFT[r]];\n"
+"      j=SR[ss[si]][LEFT[r]];\n"
 "      ss[++si]=TG[j];\n"
 "      st[si]=LEFT[r];\n"
 "    }\n"

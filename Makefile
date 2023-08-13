@@ -1,6 +1,5 @@
 CC=gcc
-#CFLAGS=-O2
-CFLAGS=-g
+CFLAGS=-O2
 
 all: pg
 

@@ -1,0 +1,20 @@
+# test a bunch of shift/reduce and reduce/reduce conflicts
+s >
+s > e
+s > e ';'
+s > Q
+e > o
+e > o V e
+e > V e
+e > V plist
+o > N
+o > '(' e ')'
+o > list
+o > plist
+o > o e
+list > '(' elist ')'
+elist >
+elist > e
+elist > elist ';' e
+elist > elist ';'
+plist > '[' elist ']'

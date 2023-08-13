@@ -15,7 +15,6 @@ typedef struct {
    t: column types
    v: column data
     : returns string representation of table 
-
    caller should free result */
 char* show(int n,int r,char **c,int *t,void **v);
 

@@ -45,7 +45,7 @@ static int isnt(char *s) { int i; for(i=0;i<NTC;i++) if(s==NT[i]) return 1; retu
 static void addnt(char *s) { if(isnt(s)) return; NT[NTC++]=s; }
 static void addt(char *s) { if(isnt(s)) return; if(ist(s)) return; T[TC++]=s; }
 
-/* compact spaces */
+/* compact space */
 static void cs(char *s) {
   char *p=s,*q=s;
   if(!s) return;
@@ -209,7 +209,7 @@ static void followgen() {
           /* add follow(A) to follow(B) */
           n=followi(RA[j].lhs);
           m=followi(p);
-          for(s=0;s<AC[n];s++) 
+          for(s=0;s<AC[n];s++)
             if(!infollow(p,AV[n][s])) { AV[m][AC[m]++]=AV[n][s]; f=1; }
         }
       }
@@ -365,76 +365,36 @@ static char* split(char *p, char c, char **q) {
     return p;
 }
 
-static void star(char *q, char *s) {
+/* star plus question cond */
+static void spqc(char *q, char *s, char m) {
   char *t,*z,*u,*v;
   if(!s) return;
   t=strdup(s);
-  u=split(t,' ',&z); 
+  u=split(t,' ',&z);
   while(u) {
-    if(1<strlen(u) && u[strlen(u)-1]=='*') {
+    if(1<strlen(u) && u[strlen(u)-1]==m) {
       v=strdup(u);
       v[strlen(v)-1]=0;
-      sprintf(RA[RN].r,"%s %s",u,q);
-      cs(RA[RN++].r);
-      sprintf(RA[RN].r,"%s %s %s %s",u,q,u,v);
-      cs(RA[RN++].r);
-      free(v);
-    }
-    u=split(0,' ',&z);
-  }
-  free(t);
-}
-static void plus(char *q, char *s) {
-  char *t,*z,*u,*v;
-  if(!s) return;
-  t=strdup(s);
-  u=split(t,' ',&z); 
-  while(u) {
-    if(1<strlen(u) && u[strlen(u)-1]=='+') {
-      v=strdup(u);
-      v[strlen(v)-1]=0;
-      sprintf(RA[RN].r,"%s %s %s",u,q,v);
-      cs(RA[RN++].r);
-      sprintf(RA[RN].r,"%s %s %s %s",u,q,u,v);
-      cs(RA[RN++].r);
-      free(v);
-    }
-    u=split(0,' ',&z);
-  }
-  free(t);
-}
-static void question(char *q, char *s) {
-  char *t,*z,*u,*v;
-  if(!s) return;
-  t=strdup(s);
-  u=split(t,' ',&z); 
-  while(u) {
-    if(1<strlen(u) && u[strlen(u)-1]=='?') {
-      v=strdup(u);
-      v[strlen(v)-1]=0;
-      sprintf(RA[RN].r,"%s %s",u,q);
-      cs(RA[RN++].r);
-      sprintf(RA[RN].r,"%s %s %s",u,q,v);
-      cs(RA[RN++].r);
-      free(v);
-    }
-    u=split(0,' ',&z);
-  }
-  free(t);
-}
-static void cond(char *q, char *s) {
-  char *t,*z,*u,*v;
-  if(!s) return;
-  t=strdup(s);
-  u=split(t,' ',&z); 
-  while(u) {
-    if(1<strlen(u) && *u=='[' && u[strlen(u)-1]==']') {
-      v=strdup(u);
-      v[strlen(v)-1]=0;
-      sprintf(RA[RN].r,"%s %s",u,q);
-      cs(RA[RN++].r);
-      sprintf(RA[RN].r,"%s %s %s",u,q,v+1);
-      cs(RA[RN++].r);
+      switch(m) {
+      case '*':
+        sprintf(RA[RN++].r,"%s %s",u,q);
+        sprintf(RA[RN++].r,"%s %s %s %s",u,q,u,v);
+        break;
+      case '+':
+        sprintf(RA[RN++].r,"%s %s %s",u,q,v);
+        sprintf(RA[RN++].r,"%s %s %s %s",u,q,u,v);
+        break;
+      case '?':
+        sprintf(RA[RN++].r,"%s %s",u,q);
+        sprintf(RA[RN++].r,"%s %s %s",u,q,v);
+        break;
+      case ']':
+        sprintf(RA[RN++].r,"%s %s",u,q);
+        sprintf(RA[RN++].r,"%s %s %s",u,q,v+1);
+        break;
+      }
+      cs(RA[RN-2].r);
+      cs(RA[RN-1].r);
       free(v);
     }
     u=split(0,' ',&z);
@@ -458,10 +418,10 @@ void pgread(char *g) {
     while(s) {
       snprintf(RA[RN].r,1024,"%s %s %s",p,q,s?s:"");
       cs(RA[RN++].r);
-      star(q,s);
-      plus(q,s);
-      question(q,s);
-      cond(q,s);
+      spqc(q,s,'*');
+      spqc(q,s,'+');
+      spqc(q,s,'?');
+      spqc(q,s,']');
       s=split(0,'|',&z);
     }
   }
@@ -521,7 +481,6 @@ static int gins() {
 void pgbuild() {
   int i,j,k,c,s;
   char *u[128];
-  /* state 0 */
   N=SN=1;
   closure(0);
   for(i=0;i<SN;i++) {
@@ -584,6 +543,7 @@ static char* getaction(int s, char *t) {
   else if(TA[i]==2) sprintf(r,"%2d",TG[i]);
   return r;
 }
+
 void pgprintt2() {
   int i,j,k,*s,*t,cn;
   char *a,**c;

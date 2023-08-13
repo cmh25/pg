@@ -21,6 +21,7 @@ static char *TT[10240]; /* token */
 static int   TA[10240]; /* action 0=reduce 1=shift 2=goto */
 static int   TG[10240]; /* goto state */
 static int   TR[10240]; /* rule */
+static int   TM[10240]; /* mark */
 static int   TN;
 
 /* goto markers */
@@ -251,14 +252,54 @@ static void closure(int s) {
   }
 }
 
-static void addtrans(int s, char *t, int a, int g, int r) {
+static char esc[256];
+static char *escape(char *s) {
+  int i,j,n;
+  if(!s) return 0;
+  n=strlen(s);
+  j=0;
+  for(i=0;i<n;i++) {
+    if(s[i]=='\n') { esc[j++]='\\'; esc[j++]='n'; }
+    else esc[j++]=s[i];
+  }
+  esc[j]=0;
+  return esc;
+}
+
+static void printmp(int r, int m) {
+  int k;
+  rule *rp=&RA[r];
+  printf("%s %s",rp->lhs,rp->op);
+  for(k=0;k<rp->rhsi;k++) {
+    if(k==m) printf(" .");
+    printf(" %s",escape(rp->rhs[k]));
+  }
+  if(m==rp->rhsi) printf(" .");
+}
+
+static void addtrans(int s, char *t, int a, int g, int r, int m) {
   int i;
   for(i=0;i<TN;i++) {
-    if(TS[i]==s&&TT[i]==t&&a>TA[i]) {
-      /* overwrite default reduce follow() entries */
+    if(TS[i]==s&&TT[i]==t) {
+      if(a==0&&TA[i]==0&&TR[i]&&TR[i]!=r) {
+        printf("warning: reduce/reduce conflict state[%d] token[%s]\n",s,t);
+        printf("         "); printmp(r,m); printf("\n");
+        printf("         "); printmp(TR[i],TM[i]); printf("\n");
+        return;
+      }
+      else if(a==0&&TA[i]==1) {
+        printf("warning: shift/reduce conflict state[%d] token[%s]\n",s,t);
+        printf("         "); printmp(r,m); printf("\n");
+        printf("         "); printmp(TR[i],TM[i]); printf("\n");
+        return;
+      }
+      else if(a==1&&TA[i]==0) ; /* overwrite default reduce follow() entries */
+      else if(a==1&&TA[i]==1) return; /* just leave first shift rule. TODO?*/
+      else ; /* a==2 */
       TA[i]=a;
       TG[i]=g;
       TR[i]=r;
+      TM[i]=m;
       return;
     }
   }
@@ -267,7 +308,8 @@ static void addtrans(int s, char *t, int a, int g, int r) {
   TT[TN]=t;
   TA[TN]=a;
   TG[TN]=g;
-  TR[TN++]=r;
+  TR[TN]=r;
+  TM[TN++]=m;
 }
 
 static void goto_(int s, char *p) {
@@ -281,9 +323,9 @@ static void goto_(int s, char *p) {
     rp=&RA[R[i]];
     rs=rp->rhs[M[i]];
     if(rp->rhsi==M[i]) { /* default reduce rule */
-      addtrans(s,rs?rs:str("$e"),0,0,R[i]);
+      addtrans(s,rs?rs:str("$e"),0,0,R[i],M[i]);
       j=followi(rp->lhs);
-      if(j!=-1) for(k=0;k<AC[j];k++) addtrans(s,AV[j][k],0,0,R[i]);
+      if(j!=-1) for(k=0;k<AC[j];k++) addtrans(s,AV[j][k],0,0,R[i],M[i]);
       continue;
     }
     else if(p==rs) {
@@ -295,7 +337,7 @@ static void goto_(int s, char *p) {
           if(f2) continue;
           else nta[c++]=rs;
         }
-        addtrans(s,rs?rs:str(""),b?2:1,SN,R[i]);
+        addtrans(s,rs?rs:str(""),b?2:1,SN,R[i],M[i]);
       }
     }
   }
@@ -453,20 +495,6 @@ void pgparse() {
   followgen();
 }
 
-static char esc[256];
-static char *escape(char *s) {
-  int i,j,n;
-  if(!s) return 0;
-  n=strlen(s);
-  j=0;
-  for(i=0;i<n;i++) {
-    if(s[i]=='\n') { esc[j++]='\\'; esc[j++]='n'; }
-    else esc[j++]=s[i];
-  }
-  esc[j]=0;
-  return esc;
-}
-
 void pgreport() {
   int i;
   printf("n:"); for(i=0;i<NTC;i++) printf(" %s",NT[i]); printf("\n");
@@ -512,13 +540,7 @@ void pgprints(int i) {
   printf("---------- state %d ----------\n",i);
   for(j=0;j<N;j++) {
     if(S[j]!=i) continue;
-    rp=&RA[R[j]];
-    printf("%s %s",rp->lhs,rp->op);
-    for(k=0;k<rp->rhsi;k++) {
-      if(k==M[j]) printf(" .");
-      printf(" %s",escape(rp->rhs[k]));
-    }
-    if(M[j]==rp->rhsi) printf(" .");
+    printmp(R[j],M[j]);
     printf("\n");
   }
 }

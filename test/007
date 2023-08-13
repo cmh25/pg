@@ -1,6 +1,6 @@
 # support for *, +, and []
-e > a* b
-a > b+ c
-b > [d] e
-d > n
-e > m
+e > n* a
+a > m+ b
+b > [p] c
+p > q
+c > r

@@ -533,7 +533,7 @@ static void printstd() {
 }
 
 void pgprintst(int d) {
-  if(d) return printstd();
+  if(d) { printstd(); return; }
   char *c[] = {"state","rule","marker"};
   int t[] = {1,1,1};
   void *v[] = {S,R,M};
@@ -550,7 +550,7 @@ static void printttd() {
 }
 
 void pgprintt(int d) {
-  if(d) return printttd();
+  if(d) { printttd(); return; }
   char *c[] = {"state","token","action","goto","rule"};
   int t[] = {1,4,1,1,1};
   void *v[] = {TS,TT,TA,TG,TR};

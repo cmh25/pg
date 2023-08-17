@@ -15,12 +15,13 @@ void pgreport();
 void pgbuild();
 void pgprints(int i);
 void pgprint();
-void pgprintst();
-void pgprintt();
+void pgprintst(int d);
+void pgprintt(int d);
 void pgprintt2();
 void pgprintfirst();
 void pgprintfollow();
 void pgh();
 void pgc();
+void pgeunitr();
 
 #endif /* PG_H */

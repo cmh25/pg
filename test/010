@@ -1,0 +1,6 @@
+# eliminating unit reductions
+G > A b
+G > B d
+A > C
+B > C
+C > e e

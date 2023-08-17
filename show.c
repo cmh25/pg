@@ -22,9 +22,10 @@ static char* xstrdup(char *s) {
    c: column names
    t: column types
    v: column data
+   d: deleted rows
     : returns string representation of table 
    caller should free result */
-char* show(int n,int r,char **c,int *t,void **v) {
+char* show(int n,int r,char **c,int *t,void **v,int *d) {
   int i,j,k,p=4;
   char *a;
   col *cc = xmalloc(n*sizeof(col));
@@ -33,10 +34,10 @@ char* show(int n,int r,char **c,int *t,void **v) {
   for(i=0;i<n;i++) {
     cc[i] = (col){c[i],t[i],v[i],xmalloc(r*sizeof(char*)),0};
     switch(t[i]) {
-    case 1: for(j=0;j<r;j++) { sprintf(b,"%d",((int*)cc[i].v)[j]); cc[i].o[j]=xstrdup(b); } break;
-    case 2: for(j=0;j<r;j++) { sprintf(b,"%0.*g",15,((double*)cc[i].v)[j]); cc[i].o[j]=xstrdup(b); } break;
-    case 3: for(j=0;j<r;j++) { sprintf(b,"%c",((char*)cc[i].v)[j]); cc[i].o[j]=xstrdup(b); } break;
-    case 4: for(j=0;j<r;j++) { cc[i].o[j]=xstrdup(((char**)cc[i].v)[j]); } break;
+    case 1: for(j=0;j<r;j++) { if(d&&d[j]) continue; sprintf(b,"%d",((int*)cc[i].v)[j]); cc[i].o[j]=xstrdup(b); } break;
+    case 2: for(j=0;j<r;j++) { if(d&&d[j]) continue; sprintf(b,"%0.*g",15,((double*)cc[i].v)[j]); cc[i].o[j]=xstrdup(b); } break;
+    case 3: for(j=0;j<r;j++) { if(d&&d[j]) continue; sprintf(b,"%c",((char*)cc[i].v)[j]); cc[i].o[j]=xstrdup(b); } break;
+    case 4: for(j=0;j<r;j++) { if(d&&d[j]) continue; cc[i].o[j]=xstrdup(((char**)cc[i].v)[j]); } break;
     default: fprintf(stderr,"error: invalid column type [%d]\n", t[i]); return 0;
     }
   }
@@ -44,7 +45,7 @@ char* show(int n,int r,char **c,int *t,void **v) {
   /* lengths */
   for(i=0;i<n;i++) {
     cc[i].m=strlen(cc[i].c);
-    for(j=0;j<r;j++) { k=strlen(cc[i].o[j]); if(cc[i].m<k) cc[i].m=k; }
+    for(j=0;j<r;j++) { if(d&&d[j]) continue; k=strlen(cc[i].o[j]); if(cc[i].m<k) cc[i].m=k; }
     p+=(r+2)*(cc[i].m+n+1);
   }
 
@@ -56,6 +57,7 @@ char* show(int n,int r,char **c,int *t,void **v) {
   for(i=0;i<n;i++) { for(j=0;j<cc[i].m;j++) k+=sprintf(a+k,"-"); k+=sprintf(a+k," "); }
   k+=sprintf(a+k,"\n");
   for(i=0;i<r;i++) {
+    if(d&&d[i]) continue;
     for(j=0;j<n;j++) {
       if(cc[j].t==4) k+=sprintf(a+k,"%-*s ",cc[j].m,cc[j].o[i]);
       else k+=sprintf(a+k,"%*s ",cc[j].m,cc[j].o[i]);
@@ -63,7 +65,7 @@ char* show(int n,int r,char **c,int *t,void **v) {
     k+=sprintf(a+k,"\n");
   }
 
-  for(i=0;i<n;i++) { for(j=0;j<r;j++) free(cc[i].o[j]); free(cc[i].o); }
+  for(i=0;i<n;i++) { for(j=0;j<r;j++) { if(d&&d[j]) continue; free(cc[i].o[j]); } free(cc[i].o); }
   free(cc);
 
   return a;

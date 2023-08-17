@@ -12,6 +12,7 @@ static int RN=1;
 static int S[10240]; /* state */
 static int R[10240]; /* rule */
 static int M[10240]; /* mark */
+static int D[10240]; /* deleted */
 static int N;        /* rowcount */
 static int SN;       /* states count */
 
@@ -22,6 +23,7 @@ static int   TA[10240]; /* action 0=reduce 1=shift 2=goto */
 static int   TG[10240]; /* goto state */
 static int   TR[10240]; /* rule */
 static int   TM[10240]; /* mark */
+static int   TD[10240]; /* deleted */
 static int   TN;
 
 /* goto markers */
@@ -45,6 +47,12 @@ static int isnt(char *s) { int i; for(i=0;i<NTC;i++) if(s==NT[i]) return 1; retu
 static void addnt(char *s) { if(isnt(s)) return; NT[NTC++]=s; }
 static void addt(char *s) { if(isnt(s)) return; if(ist(s)) return; T[TC++]=s; }
 
+/* leaf for eunitr */
+static char *LF[256];
+static int LFN;
+
+static int derives(char *a, char *b);
+
 /* compact space */
 static void cs(char *s) {
   char *p=s,*q=s;
@@ -67,7 +75,7 @@ static char* xfgets(char *s, int n, FILE *f) {
 }
 
 /* production in state */
-static int ins(int s, int r, int m) {
+static int pins(int s, int r, int m) {
   int i;
   for(i=0;i<N;i++) {
     if(S[i]!=s) continue;
@@ -242,7 +250,7 @@ static void closure(int s) {
     for(j=0;j<RN;j++) {
       rp=&RA[j];
       if(u[i]!=rp->lhs) continue;
-      if(ins(s,j,0)) continue;
+      if(pins(s,j,0)) continue;
       addstate(s,j,0);
       if(isnt(rp->rhs[0])) {
         f=0; for(k=0;k<c;k++) if(u[k]==rp->rhs[0]) f=1;
@@ -329,7 +337,7 @@ static void goto_(int s, char *p) {
       continue;
     }
     else if(p==rs) {
-      if(!ins(SN,R[i],M[i])) {
+      if(!pins(SN,R[i],M[i])) {
         f=1;
         addstate(SN,R[i],M[i]+1);
         if((b=isnt(rs))) {
@@ -494,42 +502,69 @@ void pgbuild() {
 }
 
 void pgprints(int i) {
-  int j,k;
-  rule *rp;
+  int j;
   printf("---------- state %d ----------\n",i);
   for(j=0;j<N;j++) {
     if(S[j]!=i) continue;
-    printmp(R[j],M[j]);
-    printf("\n");
+    if(!D[j]) { printmp(R[j],M[j]); printf("\n"); }
   }
+}
+
+static int sdeleted(int s) {
+  int i;
+  for(i=0;i<N;i++) {
+    if(S[i]!=s) continue;
+    if(!D[i]) break;
+  }
+  return i==N ? 1 : 0;
 }
 
 void pgprint() {
   int i;
-  for(i=0;i<SN;i++) pgprints(i);
+  for(i=0;i<SN;i++) if(!sdeleted(i)) pgprints(i);
 }
 
-void pgprintst() {
+static void printstd() {
+  char *c[] = {"state","rule","marker","deleted"};
+  int t[] = {1,1,1,1};
+  void *v[] = {S,R,M,D};
+  char *a = show(4,N,c,t,v,0);
+  if(a) { printf("%s",a); free(a); }
+}
+
+void pgprintst(int d) {
+  if(d) return printstd();
   char *c[] = {"state","rule","marker"};
   int t[] = {1,1,1};
   void *v[] = {S,R,M};
-  char *a = show(3,N,c,t,v);
+  char *a = show(3,N,c,t,v,0);
   if(a) { printf("%s",a); free(a); }
 }
 
-void pgprintt() {
+static void printttd() {
+  char *c[] = {"state","token","action","goto","rule","deleted"};
+  int t[] = {1,4,1,1,1,1};
+  void *v[] = {TS,TT,TA,TG,TR,TD};
+  char *a = show(6,TN,c,t,v,0);
+  if(a) { printf("%s",a); free(a); }
+}
+
+void pgprintt(int d) {
+  if(d) return printttd();
   char *c[] = {"state","token","action","goto","rule"};
   int t[] = {1,4,1,1,1};
   void *v[] = {TS,TT,TA,TG,TR};
-  char *a = show(5,TN,c,t,v);
+  char *a = show(5,TN,c,t,v,0);
   if(a) { printf("%s",a); free(a); }
 }
 
-static char* getaction(int s, char *t) {
+static char* getaction(int s, char *t, int a) {
   int i;
   char *r;
   for(i=0;i<TN;i++) {
     if(TS[i]!=s) continue;
+    if(TD[i]) continue;
+    if(TA[i]>=a) continue;
     if(TT[i]==t) break;
   }
   r=malloc(8);
@@ -545,57 +580,71 @@ static char* getaction(int s, char *t) {
 }
 
 void pgprintt2() {
-  int i,j,k,*s,*t,cn;
+  int i,j,k,*s,*t,cn,*d;
   char *a,**c;
   void **v;
-  cn=TC+NTC;
+  cn=TC+NTC+LFN;
+  for(i=0;i<LFN;i++) if(isnt(LF[i])) --cn;
   v=malloc(sizeof(void*)*cn);
   t=(int*)malloc(sizeof(int)*cn);
   s=(int*)malloc(sizeof(int)*SN);
   c=(char**)malloc(sizeof(char*)*cn);
+  d=(int*)malloc(sizeof(int)*SN);
+  for(i=0;i<SN;i++) d[i]=sdeleted(i)?1:0;
   for(i=0;i<SN;i++) s[i]=i;
   t[0]=1; for(i=1;i<cn;i++) t[i]=4;
   c[0]="state";
   for(j=1,i=0;i<TC;i++) c[j++]=T[i];
   for(i=1;i<NTC;i++) c[j++]=NT[i];
+  for(i=0;i<LFN;i++) if(!isnt(LF[i])) c[j++]=LF[i];
   v[0]=s;
-  for(j=1,i=1;i<cn;i++,j++) {
-    v[j]=(char**)malloc(sizeof(char*)*SN);
-    for(k=0;k<SN;k++) ((char**)v[j])[k]=getaction(k,c[i]);
+  for(i=1;i<TC;i++) {
+    v[i]=(char**)malloc(sizeof(char*)*SN);
+    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],2);
+  }
+  for(j=0;j<NTC;j++,i++) {
+    v[i]=(char**)malloc(sizeof(char*)*SN);
+    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],3);
+  }
+  for(j=0;j<LFN;j++) {
+    if(isnt(LF[j])) continue;
+    v[i]=(char**)malloc(sizeof(char*)*SN);
+    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],3);
+    i++;
   }
 
-  a=show(cn,SN,c,t,v);
+  a=show(cn,SN,c,t,v,d);
   if(a) { printf("\n%s",a); free(a); }
-  for(j=1,i=1;i<cn;i++,j++) {
-    for(k=0;k<SN;k++) free(((char**)v[j])[k]);
-    free(v[j]);
+  for(i=1;i<cn;i++) {
+    for(k=0;k<SN;k++) free(((char**)v[i])[k]);
+    free(v[i]);
   }
   free(t);
   free(s);
   free(c);
   free(v);
+  free(d);
 }
 
 static char TL[256][256];
-static char NTL[256][256];
 static int TLE[256];
-static int NTLE[256];
 void pgh() {
-  int i,n=0;
+  int i,j,k,n=0;
   FILE *fp;
+  char *ta[1024];
   if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
   fprintf(fp,"#ifndef P_H\n#define P_H\n\n");
-  for(i=0;i<TC;i++) {
-    TLE[i]=n;
-    sprintf(TL[i],"T%03d",n);
-    fprintf(fp,"#define T%03d %3d /* %s */\n",n,n,T[i]);
-    ++n;
-  }
-  for(i=0;i<NTC;i++) {
-    NTLE[i]=n;
-    sprintf(NTL[i],"N%03d",n);
-    fprintf(fp,"#define N%03d %3d /* %s */\n",n,n,NT[i]);
-    ++n;
+  for(i=0;i<TC;i++) ta[n++]=T[i];
+  for(i=0;i<NTC;i++) ta[n++]=NT[i];
+  for(i=0;i<n;i++) {
+    k=i;
+    for(j=0;j<LFN;j++)
+      if(ta[i]!=str("$a")&&derives(ta[i],LF[j])) 
+        for(k=0;k<n;k++)
+          if(ta[k]==LF[j]) break;
+    TLE[k]=i;
+    sprintf(TL[i],"T%03d",k);
+    fprintf(fp,"#define T%03d %3d /* %s */\n",k,k,ta[i]);
   }
   fprintf(fp,"\n");
   fprintf(fp,"extern int pgta[512]; /* tokens */\n");
@@ -607,29 +656,29 @@ void pgh() {
 }
 
 static void a2c(FILE *fp, char *k, int *v, int n) {
-  int i,b=0;
+  int i;
   fprintf(fp,"static int %s[%d]={",k,n);
-  for(b=0,i=0;i<n;i++) {
-    if(b) fprintf(fp,","); else b=1;
-    fprintf(fp,"%d",v[i]);
-  }
+  for(i=0;i<n;i++) fprintf(fp,"%d%s",v[i],i==n-1?"":",");
   fprintf(fp,"};\n");
 }
 
 void pgc() {
-  int i,j,k,*t,n;
+  int i,j,k,*t,n,b=0;
   FILE *fp;
   if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
   fprintf(fp,"#include \"p.h\"\n");
   fprintf(fp,"#include <stdio.h>\n\n");
 
-  j=TC+NTC;
+  j=TC+NTC+LFN;
+  for(k=0;k<LFN;k++) if(isnt(LF[k])) --j;
   t=malloc(sizeof(int)*j);
   fprintf(fp,"static int SR[%d][%d]={\n",SN,j);
   for(i=0;i<SN;i++) {
+    if(sdeleted(i)) { fprintf(fp,"{},\n"); continue; }
     fprintf(fp,"{");
     memset(t,-1,j*sizeof(int));
     for(k=0;k<TN;k++) {
+      if(TD[k]) continue;
       if(TS[k]!=i) continue;
       if(ist(TT[k])) {
         for(n=0;n<TC;n++) if(T[n]==TT[k]) break;
@@ -637,10 +686,10 @@ void pgc() {
       }
       else {
         for(n=0;n<NTC;n++) if(NT[n]==TT[k]) break;
-        t[NTLE[n]]=k;
+        t[TLE[n]]=k;
       }
     }
-    for(k=0;k<j;k++) fprintf(fp,"%d%s",t[k],k==j-1?"":",");
+    for(k=0;k<j;k++) fprintf(fp,"%d%s",t[TLE[k]],k==j-1?"":",");
     fprintf(fp,"}%s\n",i==SN-1?"":",");
   }
   fprintf(fp,"};\n\n");
@@ -656,7 +705,7 @@ void pgc() {
   fprintf(fp,"static int LEFT[%d]={",RN);
   for(i=0;i<RN;i++) {
     for(j=0;j<NTC;j++) if(NT[j]==RA[i].lhs) break;
-    fprintf(fp,"%s%s",NTL[j],i==RN-1?"":",");
+    fprintf(fp,"%s%s",TL[j+TC],i==RN-1?"":",");
   }
   fprintf(fp,"};\n");
 
@@ -666,10 +715,14 @@ void pgc() {
 "int pgi=0;     /* tv index */\n"
 "static int vv[512],vi=-1; /* value stack */\n\n");
 
-  for(i=0;i<RN;i++) fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
+  for(i=0;i<RN;i++)
+    if(RA[i].lhs==str("$a")||RA[i].rhsi!=1)
+      fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
 
   fprintf(fp,"\nstatic void (*R[%d])()={",RN);
-  for(i=0;i<RN;i++) fprintf(fp,"r%03d%s",i,i==RN-1?"":",");
+  for(i=0;i<RN;i++)
+    if(RA[i].lhs==str("$a")||RA[i].rhsi!=1) fprintf(fp,"%sr%03d",b++?",":"",i);
+    else fprintf(fp,"%s%d",b++?",":"",0);
   fprintf(fp,"};\n");
 
   fprintf(fp,"\n"
@@ -696,4 +749,139 @@ void pgc() {
 "}\n");
 
   fclose(fp);
+}
+
+static int inleaf(char *s) {
+  int i;
+  for(i=0;i<LFN;i++) if(s==LF[i]) return 1;
+  return 0;
+}
+static void leaf() {
+  int i,j,b;
+  for(i=1;i<RN;i++) {
+    if(RA[i].rhsi==1) {
+      b=1;
+      for(j=1;j<RN;j++) if(RA[j].rhsi==1&&RA[j].lhs==RA[i].rhs[0]) b=0;
+      if(b&&!inleaf(RA[i].rhs[0])) LF[LFN++]=RA[i].rhs[0];
+    }
+  }
+}
+static char *DR[256];
+static int DRN;
+static int indr(char *s) {
+  int i;
+  for(i=0;i<DRN;i++) if(s==DR[i]) return 1;
+  return 0;
+}
+static int derives(char *a, char *b) {
+  int i;
+  if(a==b) return 1;
+  if(ist(a)) return 0;
+  for(i=0;i<RN;i++) {
+    if(a!=RA[i].lhs) continue;
+    if(!RA[i].rhsi) continue;
+    if(b==RA[i].rhs[0]) return 1;
+    if(a==RA[i].rhs[0]) continue;
+    if(derives(RA[i].rhs[0],b)) return 1;
+  }
+  return 0;
+}
+static void copytrans(int a, int b) {
+  int i;
+  for(i=0;i<TN;i++) {
+    if(a!=TS[i]) continue;
+    if(!TA[i]) /* copy any actions that are not a unit reduction */
+      if(RA[TR[i]].rhsi==1) continue;
+    if(TD[i]) continue;
+    /* TODO: don't copy if already there */
+    TS[TN]=b;
+    TT[TN]=TT[i];
+    TA[TN]=TA[i];
+    TG[TN]=TG[i];
+    TR[TN]=TR[i];
+    TM[TN++]=TM[i];
+  }
+}
+/* x-successor has unit reduction */
+static int xshur(int s, char *x) {
+  int i,xs;
+  for(i=0;i<TN;i++) {
+    if(s!=TS[i]) continue;
+    if(x==TT[i]) break;
+  }
+  xs=TG[i]; /* x-successor */
+  for(i=0;i<N;i++) {
+    if(xs!=S[i]) continue;
+    if(RA[R[i]].rhsi!=1) continue;
+    if(RA[R[i]].lhs==str("$a")) continue;
+    //printf("***xshur(%d,%s): xs:%d r:[%s]\n",s,x,xs,RA[R[i]].r);
+    return 1;
+  }
+  return 0;
+}
+void pgeunitr() {
+  int i,j,k,c,p,q,s;
+  char *u[128];
+  leaf();
+  /* 2. combine states */
+  for(i=0;i<SN;i++) {
+    c=ufrhs(i,u); /* successors */
+    DRN=0;
+    for(j=0;j<LFN;j++) {
+      if(!xshur(i,LF[j])) continue; /* if x-successor has no unit reduction */
+      for(k=0;k<c;k++)
+        if(derives(u[k],LF[j])) 
+          if(!indr(u[k])) DR[DRN++]=u[k];
+      GN=N;
+      GTN=TN;
+      for(k=0;k<DRN;k++) {
+        for(p=0;p<TN;p++) {
+          if(i!=TS[p]) continue;
+          if(DR[k]!=TT[p]) continue;
+          //printf("***state %d %s-successor: %d\n",TS[p],TT[p],TG[p]);
+          for(q=0;q<N;q++) {
+            if(TG[p]!=S[q]) continue;
+            if(RA[R[q]].rhsi==1) continue;
+            addstate(SN,R[q],M[q]);
+          }
+          //printf("copytrans(%d,%d)\n",TG[p],SN);
+          copytrans(TG[p],SN);
+        }
+      }
+      if((s=gins())<0) s=SN++; /* T or R */
+      else { N=GN; TN=GTN; }
+      for(k=0;k<TN;k++) {
+        if(i!=TS[k]) continue;
+        if(TT[k]==LF[j]) TG[k]=s;
+      }
+    }
+  }
+  /* 3. delete all transitions with respect to left-hand sides of unit productions */
+  for(i=0;i<RN;i++) {
+    if(RA[i].rhsi!=1) continue; /* not a unit production */
+    if(RA[i].lhs==str("$a")) continue; /* don't delete the accept reduction */
+    for(j=0;j<TN;j++) if(TR[j]==i&&TT[j]==RA[i].rhs[0]&&isnt(TT[j])) TD[j]=1;
+  }
+  /* 4. delete all states which at this stage are not reachable from state 0 */
+  for(i=0;i<SN;i++) {
+    k=0;
+    for(j=0;j<TN;j++) { /* does it have a goto? */
+      if(i!=TG[j]) continue;
+      if(!TD[j]) k=1;
+    }
+    if(k) continue;
+    /* delete all references to this state */
+    for(j=0;j<N;j++) if(i==S[j]) D[j]=1;
+  }
+  /* 5. replace every reduce action y>w with x>w where x is a leaf and y derives x */
+  for(i=0;i<TN;i++) {
+    if(TD[i]) continue;
+    if(TA[i]!=2) continue; /* not a goto */
+    if(TT[i]==str("$a")) continue;
+    if(derives(TT[i],LF[0])) TT[i]=LF[0]; /* TODO: more than one leaf? */
+    for(j=0;j<LFN;j++) {
+      if(derives(TT[i],LF[j])) TT[i]=LF[j];
+      break;
+    }
+  }
 }

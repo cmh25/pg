@@ -1,0 +1,4 @@
+G > E c | c E c
+E > A c
+A > B | B E
+B > b b

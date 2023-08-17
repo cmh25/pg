@@ -10,6 +10,9 @@ void usage(char *c) {
   printf("  [genhc]: generate p.h and p.c\n");
   printf("  [first]: print first() for each token\n");
   printf(" [follow]: print follow() for each token\n");
+  printf(" [eunitr]: eliminate unit reductions\n");
+  printf(" [fullst]: print the full state table\n");
+  printf("  [showd]: show deleted states and transitions\n");
 }
 
 int inargv(int c, char **argv, char *a) {
@@ -18,16 +21,20 @@ int inargv(int c, char **argv, char *a) {
 }
 
 int main(int argc, char **argv) {
+  int d=0;
   if(argc<2) { usage(argv[0]); exit(1); }
+  if(inargv(argc,argv,"showd")) d=1;
   pgread(argv[1]);
   pgparse();
   pgreport();
   pgbuild();
+  if(inargv(argc,argv,"eunitr")) pgeunitr();
   pgprint();
   if(inargv(argc,argv,"pretty")) pgprintt2();
-  else pgprintt();
+  else pgprintt(d);
   if(inargv(argc,argv,"genhc")) { pgh(); pgc(); }
   if(inargv(argc,argv,"first")) pgprintfirst();
   if(inargv(argc,argv,"follow")) pgprintfollow();
+  if(inargv(argc,argv,"fullst")) pgprintst(d);
   return 0;
 }

@@ -14,6 +14,8 @@ pg test\006 > test\006.out
 pg test\007 > test\007.out
 pg test\008 > test\008.out
 pg test\009 > test\009.out
+pg test\010 > test\010.out
+pg test\011 > test\011.out
 comp /a /m test\000.res test\000.out >NUL
 if "%errorlevel%"=="0" (echo 000: pass) else echo 000: fail *****
 comp /a /m test\001.res test\001.out >NUL
@@ -34,8 +36,13 @@ comp /a /m test\008.res test\008.out >NUL
 if "%errorlevel%"=="0" (echo 008: pass) else echo 008: fail *****
 comp /a /m test\009.res test\009.out >NUL
 if "%errorlevel%"=="0" (echo 009: pass) else echo 009: fail *****
+comp /a /m test\010.res test\010.out >NUL
+if "%errorlevel%"=="0" (echo 010: pass) else echo 010: fail *****
+comp /a /m test\011.res test\011.out >NUL
+if "%errorlevel%"=="0" (echo 011: pass) else echo 011: fail *****
 exit /b 0
 :ex
 cd ex
 cd 000 & cl main.c p.c /Fe:p & cd ..
+cd 000.eunitr & cl main.c p.c /Fe:p & cd ..
 cd ..

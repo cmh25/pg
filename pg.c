@@ -234,7 +234,10 @@ void pgprintfollow() {
   printf("\n");
 }
 
-static void addstate(int s, int r, int m) {
+static void add2state(int s, int r, int m) {
+  int i;
+  for(i=0;i<N;i++) if(S[i]==s && R[i]==r && M[i]==m) break;
+  if(i!=N) return;
   S[N]=s;
   R[N]=r;
   M[N++]=m;
@@ -251,7 +254,7 @@ static void closure(int s) {
       rp=&RA[j];
       if(u[i]!=rp->lhs) continue;
       if(pins(s,j,0)) continue;
-      addstate(s,j,0);
+      add2state(s,j,0);
       if(isnt(rp->rhs[0])) {
         f=0; for(k=0;k<c;k++) if(u[k]==rp->rhs[0]) f=1;
         if(!f) u[c++]=rp->rhs[0];
@@ -339,7 +342,7 @@ static void goto_(int s, char *p) {
     else if(p==rs) {
       if(!pins(SN,R[i],M[i])) {
         f=1;
-        addstate(SN,R[i],M[i]+1);
+        add2state(SN,R[i],M[i]+1);
         if((b=isnt(rs))) {
           f2=0; for(j=0;j<c;j++) if(nta[j]==rs) f2=1;
           if(f2) continue;
@@ -474,7 +477,7 @@ void pgreport() {
 /* goto items in states */
 static int gins() {
   int i,j,k,n;
-  for(i=0;i<SN-1;i++) {
+  for(i=0;i<SN;i++) {
     n=GN;
     for(j=0;j<GN;j++) {
       if(S[j]!=i) continue;
@@ -787,13 +790,20 @@ static int derives(char *a, char *b) {
   return 0;
 }
 static void copytrans(int a, int b) {
-  int i;
+  int i,j;
   for(i=0;i<TN;i++) {
     if(a!=TS[i]) continue;
     if(!TA[i]) /* copy any actions that are not a unit reduction */
       if(RA[TR[i]].rhsi==1) continue;
     if(TD[i]) continue;
     /* TODO: don't copy if already there */
+    for(j=0;j<TN;j++) {
+      if(TS[j]==b && TT[j]==TT[i] && TA[j]==TA[i] &&
+         TG[j]==TG[i] && TR[j]==TR[i] && TM[j]==TM[i]) {
+        break;
+      }
+    }
+    if(j!=TN) continue;
     TS[TN]=b;
     TT[TN]=TT[i];
     TA[TN]=TA[i];
@@ -842,7 +852,7 @@ void pgeunitr() {
           for(q=0;q<N;q++) {
             if(TG[p]!=S[q]) continue;
             if(RA[R[q]].rhsi==1) continue;
-            addstate(SN,R[q],M[q]);
+            add2state(SN,R[q],M[q]);
           }
           //printf("copytrans(%d,%d)\n",TG[p],SN);
           copytrans(TG[p],SN);
@@ -878,10 +888,6 @@ void pgeunitr() {
     if(TD[i]) continue;
     if(TA[i]!=2) continue; /* not a goto */
     if(TT[i]==str("$a")) continue;
-    if(derives(TT[i],LF[0])) TT[i]=LF[0]; /* TODO: more than one leaf? */
-    for(j=0;j<LFN;j++) {
-      if(derives(TT[i],LF[j])) TT[i]=LF[j];
-      break;
-    }
+    for(j=0;j<LFN;j++) if(derives(TT[i],LF[j])) { TT[i]=LF[j]; break; }
   }
 }

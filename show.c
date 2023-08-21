@@ -52,15 +52,15 @@ char* show(int n,int r,char **c,int *t,void **v,int *d) {
   /* build result */
   a=xmalloc(p);
   k=0;
-  for(i=0;i<n;i++) k+=sprintf(a+k,"%-*s ",cc[i].m,cc[i].c);
+  for(i=0;i<n;i++) k+=sprintf(a+k,"%-*s%s",cc[i].m,cc[i].c,i==n-1?"":" ");
   k+=sprintf(a+k,"\n");
-  for(i=0;i<n;i++) { for(j=0;j<cc[i].m;j++) k+=sprintf(a+k,"-"); k+=sprintf(a+k," "); }
+  for(i=0;i<n;i++) { for(j=0;j<cc[i].m;j++) k+=sprintf(a+k,"-"); if(i!=n-1) k+=sprintf(a+k," "); }
   k+=sprintf(a+k,"\n");
   for(i=0;i<r;i++) {
     if(d&&d[i]) continue;
     for(j=0;j<n;j++) {
-      if(cc[j].t==4) k+=sprintf(a+k,"%-*s ",cc[j].m,cc[j].o[i]);
-      else k+=sprintf(a+k,"%*s ",cc[j].m,cc[j].o[i]);
+      if(cc[j].t==4) k+=sprintf(a+k,"%-*s%s",cc[j].m,cc[j].o[i],j==n-1?"":" ");
+      else k+=sprintf(a+k,"%*s%s",cc[j].m,cc[j].o[i],j==n-1?"":" ");
     }
     k+=sprintf(a+k,"\n");
   }

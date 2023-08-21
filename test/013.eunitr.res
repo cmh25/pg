@@ -8,8 +8,8 @@ $a > . A
 A > . a
 ---------- state 1 ----------
 $a > A .
-state token action goto rule 
------ ----- ------ ---- ---- 
-    0 a          2    1    0 
-    0 a          1    1    1 
-    1 $e         0    0    0 
+state token action goto rule
+----- ----- ------ ---- ----
+    0 a          2    1    0
+    0 a          1    1    1
+    1 $e         0    0    0

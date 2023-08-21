@@ -7,8 +7,8 @@ pg
 *.swo
 test/*.out
 test/*.diff
-p.h
-p.c
+/p.h
+/p.c
 p
 pg.dSYM
 p.dSYM

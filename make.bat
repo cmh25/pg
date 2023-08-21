@@ -46,6 +46,7 @@ comp /a /m test\012.res test\012.out >NUL
 if "%errorlevel%"=="0" (echo 012: pass) else echo 012: fail *****
 comp /a /m test\013.res test\013.out >NUL
 if "%errorlevel%"=="0" (echo 013: pass) else echo 013: fail *****
+echo eunitr:
 pg test\000 printstates eunitr > test\000.eunitr.out
 pg test\012 printstates eunitr > test\012.eunitr.out
 pg test\013 printstates eunitr > test\013.eunitr.out

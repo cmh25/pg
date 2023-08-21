@@ -22,107 +22,107 @@ t: ';' Q V N '(' ')' '[' ']' $e
 18. elist > elist ';'
 19. plist > '[' elist ']'
 warning: shift/reduce conflict state[4] token[V]
-         e > o .
-         e > o . V e
+         6. e > o . V e
+         5. e > o .
 warning: shift/reduce conflict state[4] token[V]
-         e > o .
-         e > o . V e
+         6. e > o . V e
+         5. e > o .
 warning: shift/reduce conflict state[4] token[V]
-         e > o .
-         e > o . V e
+         6. e > o . V e
+         5. e > o .
 warning: shift/reduce conflict state[4] token[V]
-         e > o .
-         e > o . V e
+         6. e > o . V e
+         5. e > o .
 warning: shift/reduce conflict state[4] token[N]
-         e > o .
-         o > . N
+         9. o > . N
+         5. e > o .
 warning: shift/reduce conflict state[4] token[V]
-         e > o .
-         e > o . V e
+         6. e > o . V e
+         5. e > o .
 warning: shift/reduce conflict state[4] token[N]
-         e > o .
-         o > . N
+         9. o > . N
+         5. e > o .
 warning: shift/reduce conflict state[4] token['(']
-         e > o .
-         o > . '(' e ')'
+         10. o > . '(' e ')'
+         5. e > o .
 warning: shift/reduce conflict state[4] token[V]
-         e > o .
-         e > o . V e
+         6. e > o . V e
+         5. e > o .
 warning: shift/reduce conflict state[4] token[N]
-         e > o .
-         o > . N
+         9. o > . N
+         5. e > o .
 warning: shift/reduce conflict state[4] token['(']
-         e > o .
-         o > . '(' e ')'
+         10. o > . '(' e ')'
+         5. e > o .
 warning: shift/reduce conflict state[4] token[V]
-         e > o .
-         e > o . V e
+         6. e > o . V e
+         5. e > o .
 warning: shift/reduce conflict state[4] token[N]
-         e > o .
-         o > . N
+         9. o > . N
+         5. e > o .
 warning: shift/reduce conflict state[4] token['(']
-         e > o .
-         o > . '(' e ')'
+         10. o > . '(' e ')'
+         5. e > o .
 warning: reduce/reduce conflict state[15] token[$e]
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: reduce/reduce conflict state[15] token[V]
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: reduce/reduce conflict state[15] token[N]
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: reduce/reduce conflict state[15] token['(']
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: reduce/reduce conflict state[15] token['[']
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: reduce/reduce conflict state[15] token[';']
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: reduce/reduce conflict state[15] token[')']
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: reduce/reduce conflict state[15] token[$e]
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: reduce/reduce conflict state[15] token[']']
-         o > plist .
-         e > V plist .
+         8. e > V plist .
+         12. o > plist .
 warning: shift/reduce conflict state[16] token[')']
-         elist > e .
-         o > '(' e . ')'
+         10. o > '(' e . ')'
+         16. elist > e .
 warning: shift/reduce conflict state[16] token[')']
-         elist > e .
-         o > '(' e . ')'
+         10. o > '(' e . ')'
+         16. elist > e .
 warning: reduce/reduce conflict state[19] token[$e]
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 warning: reduce/reduce conflict state[19] token[';']
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 warning: reduce/reduce conflict state[19] token[')']
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 warning: reduce/reduce conflict state[19] token[$e]
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 warning: reduce/reduce conflict state[19] token[V]
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 warning: reduce/reduce conflict state[19] token[N]
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 warning: reduce/reduce conflict state[19] token['(']
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 warning: reduce/reduce conflict state[19] token['[']
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 warning: reduce/reduce conflict state[19] token[']']
-         e > V e .
-         e > o V e .
+         6. e > o V e .
+         7. e > V e .
 ---------- state 0 ----------
 $a > . s
 s > .

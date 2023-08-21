@@ -8,8 +8,8 @@ t: b d e $e
  4. B > C
  5. C > e e
 warning: reduce/reduce conflict state[4] token[$e]
-         B > C .
-         A > C .
+         3. A > C .
+         4. B > C .
 ---------- state 0 ----------
 $a > . G
 G > . A b

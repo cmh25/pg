@@ -294,14 +294,14 @@ static void addtrans(int s, char *t, int a, int g, int r, int m) {
     if(TS[i]==s&&TT[i]==t) {
       if(a==0&&TA[i]==0&&TR[i]&&TR[i]!=r) {
         printf("warning: reduce/reduce conflict state[%d] token[%s]\n",s,t);
-        printf("         "); printmp(r,m); printf("\n");
-        printf("         "); printmp(TR[i],TM[i]); printf("\n");
+        printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
+        printf("         %d. ",r); printmp(r,m); printf("\n");
         return;
       }
       else if(a==0&&TA[i]==1) {
         printf("warning: shift/reduce conflict state[%d] token[%s]\n",s,t);
-        printf("         "); printmp(r,m); printf("\n");
-        printf("         "); printmp(TR[i],TM[i]); printf("\n");
+        printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
+        printf("         %d. ",r); printmp(r,m); printf("\n");
         return;
       }
       else if(a==1&&TA[i]==0) ; /* overwrite default reduce follow() entries */

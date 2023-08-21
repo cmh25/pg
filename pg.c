@@ -695,7 +695,7 @@ void pgc() {
   t=malloc(sizeof(int)*j);
   fprintf(fp,"static int SR[%d][%d]={\n",SN,j);
   for(i=0;i<SN;i++) {
-    if(sdeleted(i)) { fprintf(fp,"{},\n"); continue; }
+    if(sdeleted(i)) { fprintf(fp,"{0},\n"); continue; }
     fprintf(fp,"{");
     memset(t,-1,j*sizeof(int));
     for(k=0;k<TN;k++) {

@@ -4,20 +4,20 @@ if "%1%"=="ex" goto ex
 cl main.c pg.c show.c /Fe:pg
 exit /b 0
 :test
-pg test\000 > test\000.out
-pg test\001 > test\001.out
-pg test\002 > test\002.out
-pg test\003 > test\003.out
-pg test\004 > test\004.out
-pg test\005 > test\005.out
-pg test\006 > test\006.out
-pg test\007 > test\007.out
-pg test\008 > test\008.out
-pg test\009 > test\009.out
-pg test\010 > test\010.out
-pg test\011 > test\011.out
-pg test\012 > test\012.out
-pg test\013 > test\013.out
+pg test\000 printstates > test\000.out
+pg test\001 printstates > test\001.out
+pg test\002 printstates > test\002.out
+pg test\003 printstates > test\003.out
+pg test\004 printstates > test\004.out
+pg test\005 printstates > test\005.out
+pg test\006 printstates > test\006.out
+pg test\007 printstates > test\007.out
+pg test\008 printstates > test\008.out
+pg test\009 printstates > test\009.out
+pg test\010 printstates > test\010.out
+pg test\011 printstates > test\011.out
+pg test\012 printstates > test\012.out
+pg test\013 printstates > test\013.out
 comp /a /m test\000.res test\000.out >NUL
 if "%errorlevel%"=="0" (echo 000: pass) else echo 000: fail *****
 comp /a /m test\001.res test\001.out >NUL
@@ -46,9 +46,9 @@ comp /a /m test\012.res test\012.out >NUL
 if "%errorlevel%"=="0" (echo 012: pass) else echo 012: fail *****
 comp /a /m test\013.res test\013.out >NUL
 if "%errorlevel%"=="0" (echo 013: pass) else echo 013: fail *****
-pg test\000 > test\000.eunitr.out
-pg test\012 > test\012.eunitr.out
-pg test\013 > test\013.eunitr.out
+pg test\000 printstates eunitr > test\000.eunitr.out
+pg test\012 printstates eunitr > test\012.eunitr.out
+pg test\013 printstates eunitr > test\013.eunitr.out
 comp /a /m test\000.eunitr.res test\000.eunitr.out >NUL
 if "%errorlevel%"=="0" (echo 000: pass) else echo 000: fail *****
 comp /a /m test\012.eunitr.res test\012.eunitr.out >NUL

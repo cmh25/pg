@@ -491,25 +491,16 @@ static int gins() {
 
 /* find the first state that is a combination of the current potential state.
    state s0 is a combination of s1 if s0 has an action A for a symbol P iff
-   s1 has an action A for P and A is not a unit reduction.
-*/
+   s1 has an action A for P and A is not a unit reduction. */
 static int getcomb() {
   int i,j,k,n;
-  //printf("getcomb() GTN:%d TN:%d\n",GTN,TN);
   for(i=0;i<SN;i++) {
-    //printf(" i:%d\n",i);
     n=GTN;
     for(j=0;j<GTN;j++) {
-      //printf("  j:%d\n",j);
       if(TS[j]!=i) continue;
-      //printf("  n:%d\n",n);
-      for(k=GTN;k<TN;k++) {
-        //printf("   k:%d %s==%s %d==%d %d==%d\n",k,TT[j],TT[k],TA[j],TA[k],TR[j],TR[k]);
-        if(TT[j]==TT[k]&&TA[j]==TA[k]&&TR[j]==TR[k]) ++n;
-        //printf("   n:%d\n",n);
-      }
-      //printf("   %d==%d\n",n,TN);
+      for(k=GTN;k<TN;k++) if(TT[j]==TT[k]&&TA[j]==TA[k]&&TR[j]==TR[k]) ++n;
     }
+    if(n==TN) return i;
   }
   return -1;
 }
@@ -820,6 +811,10 @@ static int copytrans(int a, int b) {
   for(i=0;i<TN;i++) {
     if(a!=TS[i]) continue;
     if(RA[TR[i]].rhsi==1&&RA[TR[i]].lhs!=str("$a")) continue;
+    for(j=0;j<TN;j++)
+      if(TS[j]==b && TT[j]==TT[i] && TA[j]==TA[i] && TG[j]==TG[i] && TR[j]==TR[i] && TM[j]==TM[i])
+        break;
+    if(j!=TN) continue;
     TS[TN]=b;
     TT[TN]=TT[i];
     TA[TN]=TA[i];

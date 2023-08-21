@@ -16,6 +16,8 @@ pg test\008 > test\008.out
 pg test\009 > test\009.out
 pg test\010 > test\010.out
 pg test\011 > test\011.out
+pg test\012 > test\012.out
+pg test\013 > test\013.out
 comp /a /m test\000.res test\000.out >NUL
 if "%errorlevel%"=="0" (echo 000: pass) else echo 000: fail *****
 comp /a /m test\001.res test\001.out >NUL
@@ -40,6 +42,19 @@ comp /a /m test\010.res test\010.out >NUL
 if "%errorlevel%"=="0" (echo 010: pass) else echo 010: fail *****
 comp /a /m test\011.res test\011.out >NUL
 if "%errorlevel%"=="0" (echo 011: pass) else echo 011: fail *****
+comp /a /m test\012.res test\012.out >NUL
+if "%errorlevel%"=="0" (echo 012: pass) else echo 012: fail *****
+comp /a /m test\013.res test\013.out >NUL
+if "%errorlevel%"=="0" (echo 013: pass) else echo 013: fail *****
+pg test\000 > test\000.eunitr.out
+pg test\012 > test\012.eunitr.out
+pg test\013 > test\013.eunitr.out
+comp /a /m test\000.eunitr.res test\000.eunitr.out >NUL
+if "%errorlevel%"=="0" (echo 000: pass) else echo 000: fail *****
+comp /a /m test\012.eunitr.res test\012.eunitr.out >NUL
+if "%errorlevel%"=="0" (echo 012: pass) else echo 012: fail *****
+comp /a /m test\013.eunitr.res test\013.eunitr.out >NUL
+if "%errorlevel%"=="0" (echo 013: pass) else echo 013: fail *****
 exit /b 0
 :ex
 cd ex

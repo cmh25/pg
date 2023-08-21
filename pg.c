@@ -489,6 +489,31 @@ static int gins() {
   return -1;
 }
 
+/* find the first state that is a combination of the current potential state.
+   state s0 is a combination of s1 if s0 has an action A for a symbol P iff
+   s1 has an action A for P and A is not a unit reduction.
+*/
+static int getcomb() {
+  int i,j,k,n;
+  //printf("getcomb() GTN:%d TN:%d\n",GTN,TN);
+  for(i=0;i<SN;i++) {
+    //printf(" i:%d\n",i);
+    n=GTN;
+    for(j=0;j<GTN;j++) {
+      //printf("  j:%d\n",j);
+      if(TS[j]!=i) continue;
+      //printf("  n:%d\n",n);
+      for(k=GTN;k<TN;k++) {
+        //printf("   k:%d %s==%s %d==%d %d==%d\n",k,TT[j],TT[k],TA[j],TA[k],TR[j],TR[k]);
+        if(TT[j]==TT[k]&&TA[j]==TA[k]&&TR[j]==TR[k]) ++n;
+        //printf("   n:%d\n",n);
+      }
+      //printf("   %d==%d\n",n,TN);
+    }
+  }
+  return -1;
+}
+
 void pgbuild() {
   int i,j,k,c,s;
   char *u[128];
@@ -540,7 +565,7 @@ void pgprintst(int d) {
   char *c[] = {"state","rule","marker"};
   int t[] = {1,1,1};
   void *v[] = {S,R,M};
-  char *a = show(3,N,c,t,v,0);
+  char *a = show(3,N,c,t,v,D);
   if(a) { printf("%s",a); free(a); }
 }
 
@@ -557,7 +582,7 @@ void pgprintt(int d) {
   char *c[] = {"state","token","action","goto","rule"};
   int t[] = {1,4,1,1,1};
   void *v[] = {TS,TT,TA,TG,TR};
-  char *a = show(5,TN,c,t,v,0);
+  char *a = show(5,TN,c,t,v,TD);
   if(a) { printf("%s",a); free(a); }
 }
 
@@ -567,14 +592,15 @@ static char* getaction(int s, char *t, int a) {
   for(i=0;i<TN;i++) {
     if(TS[i]!=s) continue;
     if(TD[i]) continue;
-    if(TA[i]>=a) continue;
+    if(a==1 && TA[i]>1) continue;
+    if(a==2 && TA[i]!=2) continue;
     if(TT[i]==t) break;
   }
   r=malloc(8);
   if(i==TN) r[0]=0;
   else if(TA[i]==0) {
     if(TR[i]) sprintf(r,"r%d",TR[i]);
-    else if(TA[i]==0 && TG[i]==0) sprintf(r,"acc");
+    else if(TA[i]==0 && TG[i]==0) sprintf(r,"r0");
     else r[0]=0;
   }
   else if(TA[i]==1) sprintf(r,"s%d",TG[i]);
@@ -586,7 +612,7 @@ void pgprintt2() {
   int i,j,k,*s,*t,cn,*d;
   char *a,**c;
   void **v;
-  cn=TC+NTC+LFN;
+  cn=TC+NTC+LFN+1;
   for(i=0;i<LFN;i++) if(isnt(LF[i])) --cn;
   v=malloc(sizeof(void*)*cn);
   t=(int*)malloc(sizeof(int)*cn);
@@ -598,24 +624,24 @@ void pgprintt2() {
   t[0]=1; for(i=1;i<cn;i++) t[i]=4;
   c[0]="state";
   for(j=1,i=0;i<TC;i++) c[j++]=T[i];
-  for(i=1;i<NTC;i++) c[j++]=NT[i];
+  for(i=0;i<NTC;i++) c[j++]=NT[i];
   for(i=0;i<LFN;i++) if(!isnt(LF[i])) c[j++]=LF[i];
   v[0]=s;
-  for(i=1;i<TC;i++) {
+  i=1;
+  for(j=0;j<TC;j++,i++) {
     v[i]=(char**)malloc(sizeof(char*)*SN);
-    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],2);
+    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],1); /* reduce shift */
   }
   for(j=0;j<NTC;j++,i++) {
     v[i]=(char**)malloc(sizeof(char*)*SN);
-    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],3);
+    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],2); /* goto */
   }
   for(j=0;j<LFN;j++) {
     if(isnt(LF[j])) continue;
     v[i]=(char**)malloc(sizeof(char*)*SN);
-    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],3);
+    for(k=0;k<SN;k++) ((char**)v[i])[k]=getaction(k,c[i],2); /* goto */
     i++;
   }
-
   a=show(cn,SN,c,t,v,d);
   if(a) { printf("\n%s",a); free(a); }
   for(i=1;i<cn;i++) {
@@ -789,28 +815,20 @@ static int derives(char *a, char *b) {
   }
   return 0;
 }
-static void copytrans(int a, int b) {
-  int i,j;
+static int copytrans(int a, int b) {
+  int i,j,r=0;
   for(i=0;i<TN;i++) {
     if(a!=TS[i]) continue;
-    if(!TA[i]) /* copy any actions that are not a unit reduction */
-      if(RA[TR[i]].rhsi==1) continue;
-    if(TD[i]) continue;
-    /* TODO: don't copy if already there */
-    for(j=0;j<TN;j++) {
-      if(TS[j]==b && TT[j]==TT[i] && TA[j]==TA[i] &&
-         TG[j]==TG[i] && TR[j]==TR[i] && TM[j]==TM[i]) {
-        break;
-      }
-    }
-    if(j!=TN) continue;
+    if(RA[TR[i]].rhsi==1&&RA[TR[i]].lhs!=str("$a")) continue;
     TS[TN]=b;
     TT[TN]=TT[i];
     TA[TN]=TA[i];
     TG[TN]=TG[i];
     TR[TN]=TR[i];
     TM[TN++]=TM[i];
+    r++;
   }
+  return r;
 }
 /* x-successor has unit reduction */
 static int xshur(int s, char *x) {
@@ -824,69 +842,66 @@ static int xshur(int s, char *x) {
     if(xs!=S[i]) continue;
     if(RA[R[i]].rhsi!=1) continue;
     if(RA[R[i]].lhs==str("$a")) continue;
-    //printf("***xshur(%d,%s): xs:%d r:[%s]\n",s,x,xs,RA[R[i]].r);
     return 1;
   }
   return 0;
 }
+/* Based on Pager,D. (1977) Eliminating Unit Productions from LR Parsers. Acta Informatica. */
 void pgeunitr() {
-  int i,j,k,c,p,q,s;
+  int i,j,k,c,p,q,s,b;
   char *u[128];
   leaf();
-  /* 2. combine states */
+  /* 1. for each state, do step 2 for each leaf */
   for(i=0;i<SN;i++) {
     c=ufrhs(i,u); /* successors */
     DRN=0;
     for(j=0;j<LFN;j++) {
+      /* 2. combine states */
       if(!xshur(i,LF[j])) continue; /* if x-successor has no unit reduction */
-      for(k=0;k<c;k++)
-        if(derives(u[k],LF[j])) 
-          if(!indr(u[k])) DR[DRN++]=u[k];
-      GN=N;
-      GTN=TN;
+      for(k=0;k<c;k++) if(derives(u[k],LF[j])) if(!indr(u[k])) DR[DRN++]=u[k];
+      GN=N; GTN=TN;
       for(k=0;k<DRN;k++) {
-        for(p=0;p<TN;p++) {
+        for(b=0,p=0;p<TN;p++) {
           if(i!=TS[p]) continue;
           if(DR[k]!=TT[p]) continue;
-          //printf("***state %d %s-successor: %d\n",TS[p],TT[p],TG[p]);
           for(q=0;q<N;q++) {
             if(TG[p]!=S[q]) continue;
-            if(RA[R[q]].rhsi==1) continue;
             add2state(SN,R[q],M[q]);
+            b=1;
           }
-          //printf("copytrans(%d,%d)\n",TG[p],SN);
-          copytrans(TG[p],SN);
+          if(b) copytrans(TG[p],SN);
         }
       }
-      if((s=gins())<0) s=SN++; /* T or R */
+      if(N==GN) continue; /* no new state added */
+      s=getcomb(); /* T or R */
+      if(s<0) s=SN++;
       else { N=GN; TN=GTN; }
       for(k=0;k<TN;k++) {
         if(i!=TS[k]) continue;
-        if(TT[k]==LF[j]) TG[k]=s;
+        if(derives(TT[k],LF[j])) TG[k]=s; /* if derives leaf, update successor */
       }
     }
   }
   /* 3. delete all transitions with respect to left-hand sides of unit productions */
-  for(i=0;i<RN;i++) {
+  for(i=1;i<RN;i++) { /* don't delete accept */
     if(RA[i].rhsi!=1) continue; /* not a unit production */
-    if(RA[i].lhs==str("$a")) continue; /* don't delete the accept reduction */
-    for(j=0;j<TN;j++) if(TR[j]==i&&TT[j]==RA[i].rhs[0]&&isnt(TT[j])) TD[j]=1;
+    for(j=0;j<TN;j++) if(TR[j]==i&&TA[j]==0&&TM[j]==1) TD[j]=1;
   }
   /* 4. delete all states which at this stage are not reachable from state 0 */
   for(i=0;i<SN;i++) {
-    k=0;
     for(j=0;j<TN;j++) { /* does it have a goto? */
       if(i!=TG[j]) continue;
-      if(!TD[j]) k=1;
+      if(!TD[j]) break;
     }
-    if(k) continue;
+    if(j!=TN) continue;
     /* delete all references to this state */
     for(j=0;j<N;j++) if(i==S[j]) D[j]=1;
+    for(j=0;j<TN;j++) if(i==TS[j]) TD[j]=1;
   }
   /* 5. replace every reduce action y>w with x>w where x is a leaf and y derives x */
   for(i=0;i<TN;i++) {
     if(TD[i]) continue;
-    if(TA[i]!=2) continue; /* not a goto */
+    if(TA[i]!=2) continue;
     if(TT[i]==str("$a")) continue;
     for(j=0;j<LFN;j++) if(derives(TT[i],LF[j])) { TT[i]=LF[j]; break; }
   }

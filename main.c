@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
   pgreport();
   pgbuild();
   if(inargv(argc,argv,"eunitr")) pgeunitr();
-  pgprint();
+  if(inargv(argc,argv,"printstates")) pgprint();
   if(inargv(argc,argv,"pretty")) pgprintt2();
   else pgprintt(d);
   if(inargv(argc,argv,"genhc")) { pgh(); pgc(); }

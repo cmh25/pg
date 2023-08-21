@@ -4,6 +4,7 @@ a simple parser generator in c
 Takes a grammar spec as input and outputs the parse states and shift/reduce action table.
 
 ```
+
 cmh@ubuntu20:~/pg$ cat test/000
 # dragon book example
 e > e '+' t
@@ -13,7 +14,7 @@ t > f
 f > '(' e ')'
 f > n
 cmh@ubuntu20:~/pg$
-cmh@ubuntu20:~/pg$ ./pg test/000 pretty
+cmh@ubuntu20:~/pg$ ./pg test/000 printstates pretty
 n: $a e t f
 t: '+' '*' '(' ')' n $e
 -------------------------
@@ -71,16 +72,16 @@ t > t '*' f .
 ---------- state 11 ----------
 f > '(' e ')' .
 
-state '+' '*' '(' ')' n  $e  e  t  f
------ --- --- --- --- -- --- -- -- --
-    0         s4      s5      1  2  3
-    1 s6                 acc
+state '+' '*' '(' ')' n  $e $a e  t  f
+----- --- --- --- --- -- -- -- -- -- --
+    0         s4      s5        1  2  3
+    1 s6                 r0
     2 r2  s7      r2     r2
     3 r4  r4      r4     r4
-    4         s4      s5      8  2  3
+    4         s4      s5        8  2  3
     5 r6  r6      r6     r6
-    6         s4      s5         9  3
-    7         s4      s5           10
+    6         s4      s5           9  3
+    7         s4      s5             10
     8 s6          s11
     9 r1  s7      r1     r1
    10 r3  r3      r3     r3

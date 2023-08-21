@@ -664,6 +664,7 @@ void pgh() {
           if(ta[k]==LF[j]) break;
     TLE[k]=i;
     sprintf(TL[i],"T%03d",k);
+    if(k!=i) continue; /* don't define eliminated tokens */
     fprintf(fp,"#define T%03d %3d /* %s */\n",k,k,ta[i]);
   }
   fprintf(fp,"\n");

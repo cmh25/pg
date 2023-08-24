@@ -850,7 +850,7 @@ static int xshur(int s, char *x) {
 void pgeunitr() {
   int i,j,k,c,p,q,s,b;
   char *u[128];
-  if(conflicts) { printf("error: cannot eliminate unit reductions when there are conflicts.\n"); exit(1); }
+  if(conflicts) { fprintf(stderr,"error: cannot eliminate unit reductions when there are conflicts.\n"); exit(1); }
   leaf();
   /* 1. for each state, do step 2 for each leaf */
   for(i=0;i<SN;i++) {

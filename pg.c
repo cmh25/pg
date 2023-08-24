@@ -51,6 +51,8 @@ static void addt(char *s) { if(isnt(s)) return; if(ist(s)) return; T[TC++]=s; }
 static char *LF[256];
 static int LFN;
 
+static int conflicts;
+
 static int derives(char *a, char *b);
 
 /* compact space */
@@ -296,12 +298,14 @@ static void addtrans(int s, char *t, int a, int g, int r, int m) {
         printf("warning: reduce/reduce conflict state[%d] token[%s]\n",s,t);
         printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
         printf("         %d. ",r); printmp(r,m); printf("\n");
+        conflicts++;
         return;
       }
       else if(a==0&&TA[i]==1) {
         printf("warning: shift/reduce conflict state[%d] token[%s]\n",s,t);
         printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
         printf("         %d. ",r); printmp(r,m); printf("\n");
+        conflicts++;
         return;
       }
       else if(a==1&&TA[i]==0) ; /* overwrite default reduce follow() entries */
@@ -846,6 +850,7 @@ static int xshur(int s, char *x) {
 void pgeunitr() {
   int i,j,k,c,p,q,s,b;
   char *u[128];
+  if(conflicts) { printf("error: cannot eliminate unit reductions when there are conflicts.\n"); exit(1); }
   leaf();
   /* 1. for each state, do step 2 for each leaf */
   for(i=0;i<SN;i++) {

@@ -79,10 +79,7 @@ static char* xfgets(char *s, int n, FILE *f) {
 /* production in state */
 static int pins(int s, int r, int m) {
   int i;
-  for(i=0;i<N;i++) {
-    if(S[i]!=s) continue;
-    if(R[i]==r&&M[i]==m) return 1;
-  }
+  for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&&M[i]==m) return 1;
   return 0;
 }
 
@@ -93,7 +90,7 @@ int ufrhs(int s, char **u) {
   for(i=0;i<N;i++) {
     if(S[i]!=s) continue;
     rp=&RA[R[i]];
-    f=0; for(j=0;j<c;j++) if(u[j]==rp->rhs[M[i]]) f=1;
+    for(f=0,j=0;j<c;j++) if(u[j]==rp->rhs[M[i]]) f=1;
     if(!f) u[c++]=rp->rhs[M[i]];
   }
   return c;
@@ -143,15 +140,15 @@ static void firstgen() {
   }
 }
 static int first(char **p, int c) {
-  int i,j,n,k=0,b=0,m,f;
+  int i,j,n,k=0,b=0,m;
   for(i=0;i<c;i++) {
     if(ist(p[i])) { F[k++]=p[i]; return k; }
     n=firsti(p[i]);
     for(j=0;j<FC[n];j++) {
-      if(!FV[n][j]) { F[k++]=FV[n][j]; b=1; }
+      if(!FV[n][j]) { F[k++]=0; b=1; }
       else {
-        f=0; for(m=0;m<k;m++) if(F[m]==FV[n][j]) f=1;
-        if(!f) F[k++]=FV[n][j];
+        for(m=0;m<k;m++) if(F[m]==FV[n][j]) break;
+        if(m==k) F[k++]=FV[n][j];
       }
     }
     if(b) break;
@@ -185,7 +182,7 @@ static int infollow(char *p, char *q) {
   return 0;
 }
 static void followgen() {
-  int i,j,k,n,s,m,f=1,b;
+  int i,j,k,n,s,m,f=1;
   char *p;
   for(i=1;i<NTC;i++) AK[i]=NT[i];
   AV[1][0]=str("$e");
@@ -213,8 +210,8 @@ static void followgen() {
           if(k==RA[j].rhsi-1); /* A > aB */
           else { /* A > aBb */
             n=first(&RA[j].rhs[k+1],RA[j].rhsi-k-1);
-            b=0; for(s=0;s<n;s++) if(!F[s]) b=1;
-            if(!b) continue;
+            for(s=0;s<n;s++) if(!F[s]) break;
+            if(s==n) continue;
           }
           /* add follow(A) to follow(B) */
           n=followi(RA[j].lhs);
@@ -238,7 +235,7 @@ void pgprintfollow() {
 
 static void add2state(int s, int r, int m) {
   int i;
-  for(i=0;i<N;i++) if(S[i]==s && R[i]==r && M[i]==m) break;
+  for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&& M[i]==m) break;
   if(i!=N) return;
   S[N]=s;
   R[N]=r;
@@ -246,31 +243,30 @@ static void add2state(int s, int r, int m) {
 }
 
 static void closure(int s) {
-  int i,j,k,c,f;
+  int i,j,k,c;
   char *u[128];
   rule *rp;
   c=ufrhs(s,u);
   for(i=0;i<c;i++) {
-    if(!isnt(u[i])) continue;
+    if(ist(u[i])) continue;
     for(j=0;j<RN;j++) {
       rp=&RA[j];
       if(u[i]!=rp->lhs) continue;
       if(pins(s,j,0)) continue;
       add2state(s,j,0);
       if(isnt(rp->rhs[0])) {
-        f=0; for(k=0;k<c;k++) if(u[k]==rp->rhs[0]) f=1;
-        if(!f) u[c++]=rp->rhs[0];
+        for(k=0;k<c;k++) if(u[k]==rp->rhs[0]) break;
+        if(k==c) u[c++]=rp->rhs[0];
       }
     }
   }
 }
 
 static char esc[256];
-static char *escape(char *s) {
-  int i,j,n;
+static char* escape(char *s) {
+  int i,j=0,n;
   if(!s) return 0;
   n=strlen(s);
-  j=0;
   for(i=0;i<n;i++) {
     if(s[i]=='\n') { esc[j++]='\\'; esc[j++]='n'; }
     else esc[j++]=s[i];
@@ -293,30 +289,29 @@ static void printmp(int r, int m) {
 static void addtrans(int s, char *t, int a, int g, int r, int m) {
   int i;
   for(i=0;i<TN;i++) {
-    if(TS[i]==s&&TT[i]==t) {
-      if(a==0&&TA[i]==0&&TR[i]&&TR[i]!=r) {
-        printf("warning: reduce/reduce conflict state[%d] token[%s]\n",s,t);
-        printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
-        printf("         %d. ",r); printmp(r,m); printf("\n");
-        conflicts++;
-        return;
-      }
-      else if(a==0&&TA[i]==1) {
-        printf("warning: shift/reduce conflict state[%d] token[%s]\n",s,t);
-        printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
-        printf("         %d. ",r); printmp(r,m); printf("\n");
-        conflicts++;
-        return;
-      }
-      else if(a==1&&TA[i]==0) ; /* overwrite default reduce follow() entries */
-      else if(a==1&&TA[i]==1) return; /* just leave first shift rule. TODO?*/
-      else ; /* a==2 */
-      TA[i]=a;
-      TG[i]=g;
-      TR[i]=r;
-      TM[i]=m;
+    if(TS[i]!=s||TT[i]!=t) continue;
+    if(a==0&&TA[i]==0&&TR[i]&&TR[i]!=r) {
+      printf("warning: reduce/reduce conflict state[%d] token[%s]\n",s,t);
+      printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
+      printf("         %d. ",r); printmp(r,m); printf("\n");
+      conflicts++;
       return;
     }
+    else if(a==0&&TA[i]==1) {
+      printf("warning: shift/reduce conflict state[%d] token[%s]\n",s,t);
+      printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
+      printf("         %d. ",r); printmp(r,m); printf("\n");
+      conflicts++;
+      return;
+    }
+    else if(a==1&&TA[i]==0) ; /* overwrite default reduce follow() entries */
+    else if(a==1&&TA[i]==1) return; /* just leave first shift rule. TODO?*/
+    else ; /* a==2 */
+    TA[i]=a;
+    TG[i]=g;
+    TR[i]=r;
+    TM[i]=m;
+    return;
   }
   for(i=0;i<TN;i++) if(TS[i]==s&&TT[i]==t) return;
   TS[TN]=s;
@@ -328,7 +323,7 @@ static void addtrans(int s, char *t, int a, int g, int r, int m) {
 }
 
 static void goto_(int s, char *p) {
-  int i,j,k,f=0,b,c=0,f2;
+  int i,j,k,f=0,b,c=0;
   char *rs,*nta[128];
   rule *rp;
   GN=N; /* in case this state is not added */
@@ -348,8 +343,8 @@ static void goto_(int s, char *p) {
         f=1;
         add2state(SN,R[i],M[i]+1);
         if((b=isnt(rs))) {
-          f2=0; for(j=0;j<c;j++) if(nta[j]==rs) f2=1;
-          if(f2) continue;
+          for(j=0;j<c;j++) if(nta[j]==rs) break;
+          if(j!=c) continue;
           else nta[c++]=rs;
         }
         addtrans(s,rs?rs:str(""),b?2:1,SN,R[i],M[i]);
@@ -535,11 +530,8 @@ void pgprints(int i) {
 
 static int sdeleted(int s) {
   int i;
-  for(i=0;i<N;i++) {
-    if(S[i]!=s) continue;
-    if(!D[i]) break;
-  }
-  return i==N ? 1 : 0;
+  for(i=0;i<N;i++) if(S[i]==s&&!D[i]) break;
+  return i==N;
 }
 
 void pgprint() {

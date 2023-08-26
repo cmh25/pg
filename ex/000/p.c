@@ -21,7 +21,7 @@ static int TG[45]={1,2,3,4,5,0,6,0,0,0,7,0,0,0,0,8,2,3,4,5,0,0,0,0,9,3,4,5,10,4,
 static int TR[45]={0,2,4,5,6,0,1,2,2,2,3,4,4,4,4,5,2,4,5,6,6,6,6,6,1,4,5,6,3,5,6,5,1,1,1,1,3,3,3,3,3,5,5,5,5};
 
 static int RPOP[7]={1,3,1,3,1,3,1};
-static int LEFT[7]={N006,N007,N007,N008,N008,N009,N009};
+static int LEFT[7]={T006,T007,T007,T008,T008,T009,T009};
 
 int pgta[512]; /* tokens */
 int pgva[512]; /* values */
@@ -63,8 +63,9 @@ void parse() {
   int i=0,j,r,ss[1024],st[1024],si=0;
   vi=-1;
   ss[si]=0;
-  for(;;) {
+  while(i<pgi) {
     j=SR[ss[si]][pgta[i]];
+    if(j==-1) { printf("parse\n"); return; }
     if(TA[j]) {      /* shift */
       ss[++si]=TG[j];
       st[si]=pgta[i];
@@ -75,6 +76,7 @@ void parse() {
       if(!r) return; /* accept */
       si-=RPOP[r];
       j=SR[ss[si]][LEFT[r]];
+      if(j==-1) { printf("parse2\n"); return; }
       ss[++si]=TG[j];
       st[si]=LEFT[r];
     }

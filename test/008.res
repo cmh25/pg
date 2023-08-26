@@ -115,6 +115,7 @@ state token action goto rule
    11 n          0    0   12
    12 $e         0    0   13
    12 '('        0    0   13
+   12 h          0    0   13
    12 n          0    0   13
    13 h          1   16    7
    14 $e         0    0    9

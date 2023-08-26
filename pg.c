@@ -52,6 +52,7 @@ static char *LF[256];
 static int LFN;
 
 static int conflicts;
+static int eunitr;
 
 static int derives(char *a, char *b);
 
@@ -151,7 +152,7 @@ static int first(char **p, int c) {
         if(m==k) F[k++]=FV[n][j];
       }
     }
-    if(b) break;
+    if(!b) break;
   }
   return k;
 }
@@ -703,7 +704,7 @@ void pgc() {
       }
       else {
         for(n=0;n<NTC;n++) if(NT[n]==TT[k]) break;
-        t[TLE[n]]=k;
+        t[TLE[TC+n]]=k;
       }
     }
     for(k=0;k<j;k++) fprintf(fp,"%d%s",t[TLE[k]],k==j-1?"":",");
@@ -732,14 +733,19 @@ void pgc() {
 "int pgi=0;     /* tv index */\n"
 "static int vv[512],vi=-1; /* value stack */\n\n");
 
-  for(i=0;i<RN;i++)
-    if(RA[i].lhs==str("$a")||RA[i].rhsi!=1)
-      fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
-
-  fprintf(fp,"\nstatic void (*R[%d])()={",RN);
-  for(i=0;i<RN;i++)
-    if(RA[i].lhs==str("$a")||RA[i].rhsi!=1) fprintf(fp,"%sr%03d",b++?",":"",i);
-    else fprintf(fp,"%s%d",b++?",":"",0);
+  if(eunitr) {
+    for(i=0;i<RN;i++)
+      if(RA[i].lhs==str("$a")||RA[i].rhsi!=1)
+        fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
+    fprintf(fp,"\nstatic void (*R[%d])()={",RN);
+    for(i=0;i<RN;i++)
+      if(RA[i].lhs==str("$a")||RA[i].rhsi!=1) fprintf(fp,"%sr%03d",b++?",":"",i);
+      else fprintf(fp,"%s%d",b++?",":"",0);
+  } else {
+    for(i=0;i<RN;i++) fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
+    fprintf(fp,"\nstatic void (*R[%d])()={",RN);
+    for(i=0;i<RN;i++) fprintf(fp,"%sr%03d",b++?",":"",i);
+  }
   fprintf(fp,"};\n");
 
   fprintf(fp,"\n"
@@ -747,8 +753,9 @@ void pgc() {
 "  int i=0,j,r,ss[1024],st[1024],si=0;\n"
 "  vi=-1;\n"
 "  ss[si]=0;\n"
-"  for(;;) {\n"
+"  while(i<pgi) {\n"
 "    j=SR[ss[si]][pgta[i]];\n"
+"    if(j==-1) { printf(\"parse\\n\"); return; }\n"
 "    if(TA[j]) {      /* shift */\n"
 "      ss[++si]=TG[j];\n"
 "      st[si]=pgta[i];\n"
@@ -759,6 +766,7 @@ void pgc() {
 "      if(!r) return; /* accept */\n"
 "      si-=RPOP[r];\n"
 "      j=SR[ss[si]][LEFT[r]];\n"
+"      if(j==-1) { printf(\"parse2\\n\"); return; }\n"
 "      ss[++si]=TG[j];\n"
 "      st[si]=LEFT[r];\n"
 "    }\n"
@@ -842,6 +850,7 @@ static int xshur(int s, char *x) {
 void pgeunitr() {
   int i,j,k,c,p,q,s,b;
   char *u[128];
+  eunitr=1;
   if(conflicts) { fprintf(stderr,"error: cannot eliminate unit reductions when there are conflicts.\n"); exit(1); }
   leaf();
   /* 1. for each state, do step 2 for each leaf */

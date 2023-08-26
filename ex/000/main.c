@@ -6,12 +6,14 @@
 char b[256],*p=b;;
 
 static void gn() {
-  char *s=p;
+  char c,*s=p;
   if(*p=='-')p++;
   while(*p&&isdigit(*p++));
-  p--;
   pgta[pgi]=T004;
+  c=*--p;
+  *p=0;
   pgva[pgi++]=atoi(s);
+  *p=c;
 }
 
 static int gt() {
@@ -24,7 +26,7 @@ static int gt() {
   else if(*p==')') { ++p; pgta[pgi]=T003; pgva[pgi++]=0; }
   else if(*p=='\n') { pgta[pgi]=T005; pgva[pgi++]=0; return 0; }
   else if(*p=='\\'&&*(p+1)=='\\') exit(0);
-  else { printf("parse\n"); return 0; }
+  else { printf("lex\n"); return 0; }
   return 1;
 }
 

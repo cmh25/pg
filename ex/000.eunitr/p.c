@@ -59,8 +59,9 @@ void parse() {
   int i=0,j,r,ss[1024],st[1024],si=0;
   vi=-1;
   ss[si]=0;
-  for(;;) {
+  while(i<pgi) {
     j=SR[ss[si]][pgta[i]];
+    if(j==-1) { printf("parse\n"); return; }
     if(TA[j]) {      /* shift */
       ss[++si]=TG[j];
       st[si]=pgta[i];
@@ -71,6 +72,7 @@ void parse() {
       if(!r) return; /* accept */
       si-=RPOP[r];
       j=SR[ss[si]][LEFT[r]];
+      if(j==-1) { printf("parse2\n"); return; }
       ss[++si]=TG[j];
       st[si]=LEFT[r];
     }

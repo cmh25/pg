@@ -236,7 +236,7 @@ void pgprintfollow() {
 
 static void add2state(int s, int r, int m) {
   int i;
-  for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&& M[i]==m) break;
+  for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&&M[i]==m) break;
   if(i!=N) return;
   S[N]=s;
   R[N]=r;
@@ -514,8 +514,9 @@ void pgbuild() {
     c=ufrhs(i,u);
     for(j=0;j<c;j++) {
       goto_(i,u[j]);
-      if((s=gins())<0) SN++;
-      else { N=GN; for(k=GTN;k<TN;k++) TG[k]=s; }
+      s=gins();
+      if(s<0) SN++;
+      else { N=GN; for(k=0;k<TN;k++) if(TG[k]==SN) TG[k]=s; }
     }
   }
 }

@@ -419,6 +419,8 @@ void pgread(char *g) {
   while(xfgets(b,1024,fp)) {
     if(!*b) continue;
     if('#'==*b) continue;
+    split(b,'#',&z);
+    cs(b);
     if('|'==*b) strcpy(r,b+1);
     else {
       strcpy(p,split(b,' ',&z));

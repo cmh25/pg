@@ -1,0 +1,30 @@
+# k32
+s > ps | qs
+ps > e '\n' | '\n'
+qs > e ';' | ';'
+qs > IF '[' slist ']'
+qs > WHILE '[' slist ']'
+qs > DO '[' slist ']'
+e > j
+e > v e
+e > j e
+e > o v e
+e > '(' vlist ')'  plist
+e > v plist
+e > klist
+e > ':' '[' slist ']'
+o > N
+o > '(' e ')'
+j > o
+v > V | v AV
+slist > s | slist s
+plist > '[' elist ']'
+klist > '(' elist ')'
+elist > | e ';' e
+elist > elist ';' e
+vlist > v | v vlist
+
+# lex
+# N > -4 -3 -2 -1 0 1 2 3 4 5 6
+# V > + - * % & | < > = ^ ! ~ , # _ $ ? @ .
+# AV > ' \: /: ': / \

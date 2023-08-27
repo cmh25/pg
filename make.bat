@@ -18,6 +18,7 @@ pg test\010 printstates > test\010.out
 pg test\011 printstates > test\011.out
 pg test\012 printstates > test\012.out
 pg test\013 printstates > test\013.out
+pg test\014 printstates > test\014.out
 comp /a /m test\000.res test\000.out >NUL
 if "%errorlevel%"=="0" (echo 000: pass) else echo 000: fail *****
 comp /a /m test\001.res test\001.out >NUL
@@ -46,6 +47,8 @@ comp /a /m test\012.res test\012.out >NUL
 if "%errorlevel%"=="0" (echo 012: pass) else echo 012: fail *****
 comp /a /m test\013.res test\013.out >NUL
 if "%errorlevel%"=="0" (echo 013: pass) else echo 013: fail *****
+comp /a /m test\014.res test\014.out >NUL
+if "%errorlevel%"=="0" (echo 014: pass) else echo 014: fail *****
 echo eunitr:
 pg test\000 printstates eunitr > test\000.eunitr.out
 pg test\012 printstates eunitr > test\012.eunitr.out

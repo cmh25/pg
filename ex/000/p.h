@@ -12,9 +12,10 @@
 #define T008   8 /* t */
 #define T009   9 /* f */
 
-extern int pgta[512]; /* tokens */
-extern int pgva[512]; /* values */
-extern int pgi;       /* tv index */
+extern int *pgta; /* tokens */
+extern int *pgva; /* values */
+extern int pgi;   /* tv index */
+void pgpush(int t, int v);
 void parse();
 
 #endif /* P_H */

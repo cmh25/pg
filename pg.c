@@ -668,9 +668,10 @@ void pgh() {
     fprintf(fp,"#define T%03d %3d /* %s */\n",k,k,ta[i]);
   }
   fprintf(fp,"\n");
-  fprintf(fp,"extern int pgta[512]; /* tokens */\n");
-  fprintf(fp,"extern int pgva[512]; /* values */\n");
-  fprintf(fp,"extern int pgi;       /* tv index */\n");
+  fprintf(fp,"extern int *pgta; /* tokens */\n");
+  fprintf(fp,"extern int *pgva; /* values */\n");
+  fprintf(fp,"extern int pgi;   /* tv index */\n");
+  fprintf(fp,"void pgpush(int t, int v);\n");
   fprintf(fp,"void parse();\n");
   fprintf(fp,"\n#endif /* P_H */\n");
   fclose(fp);
@@ -688,7 +689,8 @@ void pgc() {
   FILE *fp;
   if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
   fprintf(fp,"#include \"p.h\"\n");
-  fprintf(fp,"#include <stdio.h>\n\n");
+  fprintf(fp,"#include <stdio.h>\n");
+  fprintf(fp,"#include <stdlib.h>\n\n");
 
   j=TC+NTC+LFN;
   for(k=0;k<LFN;k++) if(isnt(LF[k])) --j;
@@ -731,10 +733,11 @@ void pgc() {
   fprintf(fp,"};\n");
 
   fprintf(fp,"\n"
-"int pgta[512]; /* tokens */\n"
-"int pgva[512]; /* values */\n"
-"int pgi=0;     /* tv index */\n"
-"static int vv[512],vi=-1; /* value stack */\n\n");
+"int *pgta; /* tokens */\n"
+"int *pgva; /* values */\n"
+"int pgi;   /* tv index */\n"
+"static int *vv; /* value stack */\n"
+"static size_t vi=-1,vm=2; /* value stack index and max */\n\n");
 
   if(eunitr) {
     for(i=0;i<RN;i++)
@@ -752,11 +755,36 @@ void pgc() {
   fprintf(fp,"};\n");
 
   fprintf(fp,"\n"
+"void pgpush(int t, int v) {\n"
+"  static size_t m=256;\n"
+"  if(!pgta) pgta=(int*)malloc(m*sizeof(int));\n"
+"  if(!pgva) pgva=(int*)malloc(m*sizeof(int));\n"
+"  if(pgi==m) {\n"
+"    m<<=1;\n"
+"    pgta=(int*)realloc(pgta,m*sizeof(int));\n"
+"    pgva=(int*)realloc(pgva,m*sizeof(int));\n"
+"  }\n"
+"  pgta[pgi]=t;\n"
+"  pgva[pgi++]=v;\n"
+"}\n"
+"\n"
 "void parse() {\n"
-"  int i=0,j,r,ss[1024],st[1024],si=0;\n"
+"  int i=0,j,r;\n"
+"  static int *ss=0,*st=0;\n"
+"  static size_t sm=2;\n"
+"  size_t si=0;\n"
 "  vi=-1;\n"
+"  if(!vv) vv=(int*)malloc(vm*sizeof(int));\n"
+"  if(!ss) ss=(int*)malloc(sm*sizeof(int));\n"
+"  if(!st) st=(int*)malloc(sm*sizeof(int));\n"
 "  ss[si]=0;\n"
 "  while(i<pgi) {\n"
+"    if(vi==vm) { vm<<=1; vv=(int*)realloc(vv,vm*sizeof(int)); }\n"
+"    if(si==sm) {\n"
+"      sm<<=1;\n"
+"      ss=(int*)realloc(ss,sm*sizeof(int));\n"
+"      st=(int*)realloc(st,sm*sizeof(int));\n"
+"    }\n"
 "    j=SR[ss[si]][pgta[i]];\n"
 "    if(j==-1) { printf(\"parse\\n\"); return; }\n"
 "    if(TA[j]) {      /* shift */\n"

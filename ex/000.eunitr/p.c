@@ -81,8 +81,8 @@ void parse() {
   if(!st) st=(int*)malloc(sm*sizeof(int));
   ss[si]=0;
   while(i<pgi) {
-    if(vi==vm) { vm<<=1; vv=(int*)realloc(vv,vm*sizeof(int)); }
-    if(si==sm) {
+    if(vi==vm-1) { vm<<=1; vv=(int*)realloc(vv,vm*sizeof(int)); }
+    if(si==sm-2) {
       sm<<=1;
       ss=(int*)realloc(ss,sm*sizeof(int));
       st=(int*)realloc(st,sm*sizeof(int));

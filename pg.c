@@ -1181,7 +1181,7 @@ static void purgeds() {
   int *r=(int*)malloc(sizeof(int)*N);
   int *m=(int*)malloc(sizeof(int)*N);
   int *d=(int*)malloc(sizeof(int)*N);
-  char *c[N][32];
+  char ***c=malloc(sizeof(char*)*N*32);
   int *cn=(int*)malloc(sizeof(int)*N);
   memcpy(s,S,sizeof(int)*N);
   memcpy(r,R,sizeof(int)*N);
@@ -1196,13 +1196,13 @@ static void purgeds() {
     R[j]=r[i];
     M[j]=m[i];
     D[j]=d[i];
-    memcpy(C[j],c[i],sizeof(c[i]));
+    memcpy(C[j],c[i*32],sizeof(c[i]));
     CN[j]=cn[i];
     j++;
   }
   N=j;
 
-  free(s); free(r); free(m); free(d); free(cn);
+  free(s); free(r); free(m); free(d); free(c); free(cn);
 }
 
 static void resequence() {

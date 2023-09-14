@@ -82,12 +82,6 @@ static char* xfgets(char *s, int n, FILE *f) {
 }
 
 /* production in state */
-//static int pins(int s, int r, int m) {
-//  int i;
-//  for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&&M[i]==m) return 1;
-//  return 0;
-//}
-/* production in state */
 static int pins(int s, int r, int m, char **c, int cn) {
   int i,j;
   for(i=0;i<N;i++) {
@@ -254,17 +248,15 @@ static void propagatectx(int s, int r, int m) {
   int i,j,k,u=0;
   char *n=RA[r].rhs[m];
   for(i=0;i<N;i++) {
-    if(S[i]!=s) continue;
-    if(R[i]==r&&M[i]==m) {
-      for(j=i+1;j<N;j++) {
-        if(S[j]!=s) continue;
-        if(n==RA[R[j]].lhs) {
-          for(k=0;k<CN[i];k++) {
-            for(m=0;m<CN[j];m++) if(C[i][k]==C[j][m]) break;
-            if(m==CN[j]) { C[j][CN[j]++]=C[i][k]; u=1; }
-          }
-          if(u) { propagatectx(s,R[j],0); u=0; }
+    if(S[i]!=s|R[i]!=r||M[i]!=m) continue;
+    for(j=i+1;j<N;j++) {
+      if(S[j]!=s) continue;
+      if(n==RA[R[j]].lhs) {
+        for(k=0;k<CN[i];k++) {
+          for(m=0;m<CN[j];m++) if(C[i][k]==C[j][m]) break;
+          if(m==CN[j]) { C[j][CN[j]++]=C[i][k]; u=1; }
         }
+        if(u) { propagatectx(s,R[j],0); u=0; }
       }
     }
   }
@@ -282,15 +274,13 @@ static void add2state0(int s, int r, int m) {
 static void add2state1(int s, int r, int m, char **c, int cn) {
   int i=0,j,k,u=0;
   for(i=0;i<N;i++) {
-    if(S[i]!=s) continue;
-    if(R[i]==r&&M[i]==m) {
-      for(j=0;j<cn;j++) {
-        for(k=0;k<CN[i];k++) if(C[i][k]==c[j]) break;
-        if(k==CN[i]) { C[i][CN[i]++]=c[j]; u=1; }
-      }
-      if(u) { propagatectx(s,r,m); u=0; }
-      return;
+    if(S[i]!=s||R[i]!=r||M[i]!=m) continue;
+    for(j=0;j<cn;j++) {
+      for(k=0;k<CN[i];k++) if(C[i][k]==c[j]) break;
+      if(k==CN[i]) { C[i][CN[i]++]=c[j]; u=1; }
     }
+    if(u) { propagatectx(s,r,m); u=0; }
+    return;
   }
   S[N]=s;
   R[N]=r;
@@ -321,35 +311,21 @@ static void closure0(int s) {
 }
 
 static void closure1(int s) {
-  int i,j,k,c,p;
+  int i,j,k,c,p,b;
   rule *r0,*r1;
   char *ctx[32],*n;
   int ctn=0;
-  for(i=0;i<N;i++) {
-    ctn=0;
+  for(i=0;i<N;i++,ctn=0) {
     if(S[i]!=s) continue;
     r0=&RA[R[i]];
-    if(r0->rhsi==M[i]) continue;
-    if(ist(r0->rhs[M[i]])) continue;
-    for(j=M[i]+1;j<r0->rhsi;j++)
-      ctx[ctn++]=r0->rhs[j];
-    for(j=0;j<CN[i];j++)
-      ctx[ctn++]=C[i][j];
+    if(r0->rhsi==M[i]||ist(r0->rhs[M[i]])) continue;
+    for(j=M[i]+1;j<r0->rhsi;j++) ctx[ctn++]=r0->rhs[j];
+    for(j=0;j<CN[i];j++) ctx[ctn++]=C[i][j];
     n=RA[R[i]].rhs[M[i]];
-    if(M[i]+1!=r0->rhsi) {
-      k=first(ctx,ctn);
-      for(j=0;j<RN;j++) {
-        r1=&RA[j];
-        if(r1->lhs!=n) continue;
-        add2state1(s,j,0,F,k);
-      }
-    }
-    else {
-      for(j=0;j<RN;j++) {
-        r1=&RA[j];
-        if(r1->lhs!=n) continue;
-        add2state1(s,j,0,ctx,ctn);
-      }
+    if((b=M[i]+1!=r0->rhsi)) k=first(ctx,ctn);
+    for(j=0;j<RN;j++) {
+      if(RA[j].lhs!=n) continue;
+      add2state1(s,j,0,b?F:ctx,b?k:ctn);
     }
   }
 }
@@ -371,17 +347,6 @@ static char* escape(char *s) {
   esc[j]=0;
   return esc;
 }
-
-//static void printmp(int r, int m) {
-//  int k;
-//  rule *rp=&RA[r];
-//  printf("%s %s",rp->lhs,rp->op);
-//  for(k=0;k<rp->rhsi;k++) {
-//    if(k==m) printf(" .");
-//    printf(" %s",escape(rp->rhs[k]));
-//  }
-//  if(m==rp->rhsi) printf(" .");
-//}
 
 static void printmp(int r, int m, char **c, int cn) {
   int i,j,k;
@@ -458,16 +423,15 @@ static void goto0(int s, char *p) {
       continue;
     }
     else if(p==rs) {
-      if(!pins(SN,R[i],M[i],0,0)) {
-        f=1;
-        add2state0(SN,R[i],M[i]+1);
-        if((b=isnt(rs))) {
-          for(j=0;j<c;j++) if(nta[j]==rs) break;
-          if(j!=c) continue;
-          else nta[c++]=rs;
-        }
-        addtrans(s,rs?rs:str(""),b?2:1,SN,R[i],M[i]);
+      if(pins(SN,R[i],M[i],0,0)) continue;
+      f=1;
+      add2state0(SN,R[i],M[i]+1);
+      if((b=isnt(rs))) {
+        for(j=0;j<c;j++) if(nta[j]==rs) break;
+        if(j!=c) continue;
+        nta[c++]=rs;
       }
+      addtrans(s,rs?rs:str(""),b?2:1,SN,R[i],M[i]);
     }
   }
   if(f) closure(SN);
@@ -484,24 +448,21 @@ static void goto1(int s, char *p) {
     rp=&RA[R[i]];
     rs=rp->rhs[M[i]];
     if(rp->rhsi==M[i]) { /* default reduce rule */
-      /* for any lookahead */
-      for(j=0;j<CN[i];j++) {
+      for(j=0;j<CN[i];j++) { /* for any lookahead */
         k=firsti(C[i][j]);
-        for(m=0;m<FC[k];m++)
-          addtrans(s,FV[k][m],0,0,R[i],M[i]);
+        for(m=0;m<FC[k];m++) addtrans(s,FV[k][m],0,0,R[i],M[i]);
       }
     }
     else if(p==rs) {
-      if(!pins(SN,R[i],M[i]+1,C[i],CN[i])) {
-        f=1;
-        add2state1(SN,R[i],M[i]+1,C[i],CN[i]);
-        if((b=isnt(rs))) {
-          for(j=0;j<c;j++) if(nta[j]==rs) break;
-          if(j!=c) continue;
-          else nta[c++]=rs;
-        }
-        addtrans(s,rs?rs:str(""),b?2:1,SN,R[i],M[i]);
+      if(pins(SN,R[i],M[i]+1,C[i],CN[i])) continue;
+      f=1;
+      add2state1(SN,R[i],M[i]+1,C[i],CN[i]);
+      if((b=isnt(rs))) {
+        for(j=0;j<c;j++) if(nta[j]==rs) break;
+        if(j!=c) continue;
+        nta[c++]=rs;
       }
+      addtrans(s,rs?rs:str(""),b?2:1,SN,R[i],M[i]);
     }
   }
   if(f) closure(SN);
@@ -629,19 +590,6 @@ void pgreport() {
 }
 
 /* goto items in states */
-//static int gins() {
-//  int i,j,k,n;
-//  for(i=0;i<SN;i++) {
-//    n=GN;
-//    for(j=0;j<GN;j++) {
-//      if(S[j]!=i) continue;
-//      for(k=GN;k<N;k++) if(R[j]==R[k]&&M[j]==M[k]) ++n;
-//    }
-//    if(N!=n) continue;
-//    return i;
-//  }
-//  return -1;
-//}
 static int gins() {
   int i,j,k,n,m;
   for(i=0;i<SN;i++) {
@@ -1119,11 +1067,11 @@ static int cmpcore(int p, int q) {
   int i,j,k,pn=0,qn=0;
   for(i=0;i<N;i++) if(S[i]==p) pn++;
   for(j=0;j<N;j++) if(S[j]==q) qn++;
-  if(pn!=qn) return 0;
+  if(pn!=qn) return 1;
   for(i=0;i<N;i++) if(S[i]==p) break;
   for(j=0;j<N;j++) if(S[j]==q) break;
   for(k=0;k<pn;k++,i++,j++) if(R[i]!=R[j]||M[i]!=M[j]) break;
-  return k==pn;
+  return k!=pn;
 }
 
 static void mergectx(int p, int q) {
@@ -1227,11 +1175,10 @@ void pglalr() {
   int i,j,k,f=1;
   for(i=0;i<SN;i++) {
     for(j=i+1;j<SN;j++) {
-      if(cmpcore(i,j)) {
-        mergectx(i,j);
-        updatetrans(i,j);
-        for(k=0;k<N;k++) if(S[k]==j) D[k]=1;
-      }
+      if(cmpcore(i,j)) continue;
+      mergectx(i,j);
+      updatetrans(i,j);
+      for(k=0;k<N;k++) if(S[k]==j) D[k]=1;
     }
   }
   sorttrans();

@@ -13,6 +13,8 @@ echo lr1:
 cmd /c test.bat lr1
 echo lalr:
 cmd /c test.bat lalr
+echo lr0:
+cmd /c test.bat lr0
 cd ..
 exit /b 0
 :ex

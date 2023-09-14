@@ -451,6 +451,10 @@ static void goto0(int s, char *p) {
         j=followi(rp->lhs);
         if(j!=-1) for(k=0;k<AC[j];k++) addtrans(s,AV[j][k],0,0,R[i],M[i]);
       }
+      else if(gmode==LR0) {
+        if(!R[i]) addtrans(s,str("$e"),0,0,R[i],M[i]);
+        else for(j=0;j<TC;j++) addtrans(s,T[j],0,0,R[i],M[i]);
+      }
       continue;
     }
     else if(p==rs) {

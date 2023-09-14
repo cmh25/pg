@@ -5,7 +5,7 @@ cl main.c pg.c show.c /Fe:pg
 exit /b 0
 :test
 cd test
-echo slr
+echo slr:
 cmd /c test.bat slr
 echo slr eunitr:
 cmd /c test.bat slr eunitr

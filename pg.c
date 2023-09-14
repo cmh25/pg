@@ -632,7 +632,7 @@ void pgbuild(int m) {
   char *u[128];
   gmode=m;
   N=SN=1;
-  if(gmode==LR1||gmode==LALR) C[0][0]=str("$e"); CN[0]++;
+  if(gmode==LR1||gmode==LALR) { C[0][0]=str("$e"); CN[0]++; }
   closure(0);
   for(i=0;i<SN;i++) {
     c=ufrhs(i,u);
@@ -651,7 +651,7 @@ void pgprints(int i) {
   printf("---------- state %d ----------\n",i);
   for(j=0;j<N;j++) {
     if(S[j]!=i) continue;
-    if(!D[j]) { printmp(R[j],M[j],0,0); printf("\n"); }
+    if(!D[j]) { printmp(R[j],M[j],C[j],CN[j]); printf("\n"); }
   }
 }
 
@@ -1128,27 +1128,27 @@ static void sorttrans() {
 }
 
 static void purgeds() {
-  int i,j=0;
+  int i,j,k;
   int *s=(int*)malloc(sizeof(int)*N);
   int *r=(int*)malloc(sizeof(int)*N);
   int *m=(int*)malloc(sizeof(int)*N);
   int *d=(int*)malloc(sizeof(int)*N);
-  char ***c=malloc(sizeof(char*)*N*32);
+  char **c=malloc(sizeof(char*)*N*32);
   int *cn=(int*)malloc(sizeof(int)*N);
   memcpy(s,S,sizeof(int)*N);
   memcpy(r,R,sizeof(int)*N);
   memcpy(m,M,sizeof(int)*N);
   memcpy(d,D,sizeof(int)*N);
-  memcpy(c,C,sizeof(char*)*N*32);
+  for(i=0;i<N;i++) for(j=0;j<32;j++) c[i*32+j]=C[i][j];
   memcpy(cn,CN,sizeof(int)*N);
 
-  for(i=0;i<N;i++) {
+  for(i=0,j=0;i<N;i++) {
     if(d[i]) continue;
     S[j]=s[i];
     R[j]=r[i];
     M[j]=m[i];
     D[j]=d[i];
-    memcpy(C[j],c[i*32],sizeof(c[i]));
+    for(k=0;k<32;k++) C[j][k]=c[i*32+k];
     CN[j]=cn[i];
     j++;
   }

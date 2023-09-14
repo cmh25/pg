@@ -6,34 +6,34 @@ t: a b $e
  2. A > a A
  3. A > b
 ---------- state 0 ----------
-$a > . S ,
-S > . A A ,
-A > . a A ,
-A > . b ,
+$a > . S , $e
+S > . A A , $e
+A > . a A , a b
+A > . b , a b
 ---------- state 1 ----------
-$a > S . ,
+$a > S . , $e
 ---------- state 2 ----------
-S > A . A ,
-A > . a A ,
-A > . b ,
+S > A . A , $e
+A > . a A , $e
+A > . b , $e
 ---------- state 3 ----------
-A > a . A ,
-A > . a A ,
-A > . b ,
+A > a . A , a b
+A > . a A , a b
+A > . b , a b
 ---------- state 4 ----------
-A > b . ,
+A > b . , a b
 ---------- state 5 ----------
-S > A A . ,
+S > A A . , $e
 ---------- state 6 ----------
-A > a . A ,
-A > . a A ,
-A > . b ,
+A > a . A , $e
+A > . a A , $e
+A > . b , $e
 ---------- state 7 ----------
-A > b . ,
+A > b . , $e
 ---------- state 8 ----------
-A > a A . ,
+A > a A . , a b
 ---------- state 9 ----------
-A > a A . ,
+A > a A . , $e
 state token action goto rule
 ----- ----- ------ ---- ----
     0 S          2    1    0

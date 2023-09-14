@@ -33,400 +33,400 @@ t: ';' '\n' IF '[' ']' WHILE DO N V AV '(' ')' $e
 29. ee >
 30. ee > e
 ---------- state 0 ----------
-$a > . slist ,
-slist > . s ,
-slist > . slist ';' s ,
-slist > . slist '\n' s ,
-s > . ,
-s > . e ,
-s > . c ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-c > . IF '[' slist ']' ,
-c > . WHILE '[' slist ']' ,
-c > . DO '[' slist ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+$a > . slist , $e
+slist > . s , $e ';' '\n'
+slist > . slist ';' s , $e ';' '\n'
+slist > . slist '\n' s , $e ';' '\n'
+s > . , $e ';' '\n'
+s > . e , $e ';' '\n'
+s > . c , $e ';' '\n'
+e > . j , $e ';' '\n'
+e > . v , $e ';' '\n'
+e > . j e , $e ';' '\n'
+e > . v e , $e ';' '\n'
+e > . o v e , $e ';' '\n'
+e > . o '[' e ']' , $e ';' '\n'
+c > . IF '[' slist ']' , $e ';' '\n'
+c > . WHILE '[' slist ']' , $e ';' '\n'
+c > . DO '[' slist ']' , $e ';' '\n'
+j > . o , $e ';' '\n' N V '('
+v > . V , $e ';' '\n' N V '(' AV '['
+v > . v AV , $e ';' '\n' N V '(' AV '['
+o > . N , V '[' $e ';' '\n' N '('
+o > . klist , V '[' $e ';' '\n' N '('
+o > . p , V '[' $e ';' '\n' N '('
+klist > . '(' elist ')' , V '[' $e ';' '\n' N '('
+p > . v plist , V '[' $e ';' '\n' N '('
+p > . p plist , V '[' $e ';' '\n' N '('
 ---------- state 1 ----------
-$a > slist . ,
-slist > slist . ';' s ,
-slist > slist . '\n' s ,
+$a > slist . , $e
+slist > slist . ';' s , $e ';' '\n'
+slist > slist . '\n' s , $e ';' '\n'
 ---------- state 2 ----------
-slist > s . ,
+slist > s . , $e ';' '\n' ']'
 ---------- state 3 ----------
-s > e . ,
+s > e . , $e ';' '\n' ']'
 ---------- state 4 ----------
-s > c . ,
+s > c . , $e ';' '\n' ']'
 ---------- state 5 ----------
-e > j . ,
-e > j . e ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+e > j . , $e ';' '\n' ')' ']'
+e > j . e , $e ';' '\n' ']'
+e > . j , $e ';' '\n' ')' ']'
+e > . v , $e ';' '\n' ']'
+e > . j e , $e ';' '\n' ')' ']'
+e > . v e , $e ';' '\n' ']'
+e > . o v e , $e ';' '\n' ')' ']'
+e > . o '[' e ']' , $e ';' '\n' ']'
+j > . o , $e ';' '\n' N V '('
+v > . V , $e ';' '\n' N V '(' AV '['
+v > . v AV , $e ';' '\n' N V '(' AV '['
+o > . N , V '[' $e ';' '\n' N '('
+o > . klist , V '[' $e ';' '\n' N '('
+o > . p , V '[' $e ';' '\n' N '('
+klist > . '(' elist ')' , V '[' $e ';' '\n' N '(' ')' ']'
+p > . v plist , V '[' $e ';' '\n' N '(' ']'
+p > . p plist , V '[' $e ';' '\n' N '('
 ---------- state 6 ----------
-e > v . ,
-e > v . e ,
-v > v . AV ,
-p > v . plist ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-plist > . '[' elist ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+e > v . , $e ';' '\n' ')' ']'
+e > v . e , $e ';' '\n' ']'
+v > v . AV , $e ';' '\n' N V '(' AV '['
+p > v . plist , V '[' $e ';' '\n' N '(' ']'
+e > . j , $e ';' '\n' ')' ']'
+e > . v , $e ';' '\n' ']'
+e > . j e , $e ';' '\n' ')' ']'
+e > . v e , $e ';' '\n' ']'
+e > . o v e , $e ';' '\n' ')' ']'
+e > . o '[' e ']' , $e ';' '\n' ']'
+plist > . '[' elist ']' , V '[' $e ';' '\n' N '(' ')' ']'
+j > . o , $e ';' '\n' N V '('
+v > . V , $e ';' '\n' N V '(' AV '['
+v > . v AV , $e ';' '\n' N V '(' AV '['
+o > . N , V '[' $e ';' '\n' N '('
+o > . klist , V '[' $e ';' '\n' N '('
+o > . p , V '[' $e ';' '\n' N '(' ')' ']'
+klist > . '(' elist ')' , V '[' $e ';' '\n' N '('
+p > . v plist , V '[' $e ';' '\n' N '('
+p > . p plist , V '[' $e ';' '\n' N '('
 ---------- state 7 ----------
-e > o . v e ,
-e > o . '[' e ']' ,
-j > o . ,
-v > . V ,
-v > . v AV ,
+e > o . v e , $e ';' '\n' ')' ']'
+e > o . '[' e ']' , $e ';' '\n' ']'
+j > o . , $e ';' '\n' N V '('
+v > . V , N V '(' AV
+v > . v AV , N V '(' AV
 ---------- state 8 ----------
-c > IF . '[' slist ']' ,
+c > IF . '[' slist ']' , $e ';' '\n' AV ']'
 ---------- state 9 ----------
-c > WHILE . '[' slist ']' ,
+c > WHILE . '[' slist ']' , $e ';' '\n' ')' ']'
 ---------- state 10 ----------
-c > DO . '[' slist ']' ,
+c > DO . '[' slist ']' , $e ';' '\n' ']'
 ---------- state 11 ----------
-v > V . ,
+v > V . , $e ';' '\n' N V '(' AV '[' ')' ']'
 ---------- state 12 ----------
-o > N . ,
+o > N . , V '[' $e ';' '\n' N '(' ']'
 ---------- state 13 ----------
-o > klist . ,
+o > klist . , V '[' $e ';' '\n' N '(' ')' ']'
 ---------- state 14 ----------
-o > p . ,
-p > p . plist ,
-plist > . '[' elist ']' ,
+o > p . , V '[' $e ';' '\n' N '(' ')' ']'
+p > p . plist , V '[' $e ';' '\n' N '(' ')' ']'
+plist > . '[' elist ']' , V '[' $e ';' '\n' N '(' ')' ']'
 ---------- state 15 ----------
-klist > '(' . elist ')' ,
-elist > . ee ,
-elist > . ee ';' ee ,
-elist > . elist ';' ee ,
-ee > . ,
-ee > . e ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+klist > '(' . elist ')' , V '[' $e ';' '\n' N '('
+elist > . ee , ')' ';'
+elist > . ee ';' ee , ')' ';'
+elist > . elist ';' ee , ')' ';'
+ee > . , ')' ';'
+ee > . e , ')' ';'
+e > . j , ')' ';'
+e > . v , ')' ';'
+e > . j e , ')' ';'
+e > . v e , ')' ';'
+e > . o v e , ')' ';'
+e > . o '[' e ']' , ')' ';'
+j > . o , ')' ';' N V '('
+v > . V , ')' ';' N V '(' AV '['
+v > . v AV , ')' ';' N V '(' AV '['
+o > . N , V '[' ')' ';' N '('
+o > . klist , V '[' ')' ';' N '('
+o > . p , V '[' ')' ';' N '('
+klist > . '(' elist ')' , V '[' ')' ';' N '('
+p > . v plist , V '[' ')' ';' N '('
+p > . p plist , V '[' ')' ';' N '('
 ---------- state 16 ----------
-slist > slist ';' . s ,
-s > . ,
-s > . e ,
-s > . c ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-c > . IF '[' slist ']' ,
-c > . WHILE '[' slist ']' ,
-c > . DO '[' slist ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+slist > slist ';' . s , $e ';' '\n' ']'
+s > . , $e ';' '\n'
+s > . e , $e ';' '\n'
+s > . c , $e ';' '\n' ']'
+e > . j , $e ';' '\n'
+e > . v , $e ';' '\n'
+e > . j e , $e ';' '\n' ']'
+e > . v e , $e ';' '\n'
+e > . o v e , $e ';' '\n'
+e > . o '[' e ']' , $e ';' '\n' ']'
+c > . IF '[' slist ']' , $e ';' '\n'
+c > . WHILE '[' slist ']' , $e ';' '\n'
+c > . DO '[' slist ']' , $e ';' '\n' ']'
+j > . o , $e ';' '\n' N V '('
+v > . V , $e ';' '\n' N V '(' AV '['
+v > . v AV , $e ';' '\n' N V '(' AV '['
+o > . N , V '[' $e ';' '\n' N '('
+o > . klist , V '[' $e ';' '\n' N '('
+o > . p , V '[' $e ';' '\n' N '('
+klist > . '(' elist ')' , V '[' $e ';' '\n' N '('
+p > . v plist , V '[' $e ';' '\n' N '('
+p > . p plist , V '[' $e ';' '\n' N '(' ']'
 ---------- state 17 ----------
-slist > slist '\n' . s ,
-s > . ,
-s > . e ,
-s > . c ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-c > . IF '[' slist ']' ,
-c > . WHILE '[' slist ']' ,
-c > . DO '[' slist ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+slist > slist '\n' . s , $e ';' '\n' ']'
+s > . , $e ';' '\n'
+s > . e , $e ';' '\n'
+s > . c , $e ';' '\n' ']'
+e > . j , $e ';' '\n'
+e > . v , $e ';' '\n'
+e > . j e , $e ';' '\n' ']'
+e > . v e , $e ';' '\n'
+e > . o v e , $e ';' '\n'
+e > . o '[' e ']' , $e ';' '\n' ']'
+c > . IF '[' slist ']' , $e ';' '\n'
+c > . WHILE '[' slist ']' , $e ';' '\n'
+c > . DO '[' slist ']' , $e ';' '\n' ']'
+j > . o , $e ';' '\n' N V '('
+v > . V , $e ';' '\n' N V '(' AV '['
+v > . v AV , $e ';' '\n' N V '(' AV '['
+o > . N , V '[' $e ';' '\n' N '('
+o > . klist , V '[' $e ';' '\n' N '('
+o > . p , V '[' $e ';' '\n' N '('
+klist > . '(' elist ')' , V '[' $e ';' '\n' N '('
+p > . v plist , V '[' $e ';' '\n' N '('
+p > . p plist , V '[' $e ';' '\n' N '(' ']'
 ---------- state 18 ----------
-e > j e . ,
+e > j e . , $e ';' '\n' ')' ']'
 ---------- state 19 ----------
-e > v e . ,
+e > v e . , $e ';' '\n' ')' ']'
 ---------- state 20 ----------
-v > v AV . ,
+v > v AV . , $e ';' '\n' N V '(' AV '[' ')' ']'
 ---------- state 21 ----------
-p > v plist . ,
+p > v plist . , V '[' $e ';' '\n' N '(' ')' ']'
 ---------- state 22 ----------
-plist > '[' . elist ']' ,
-elist > . ee ,
-elist > . ee ';' ee ,
-elist > . elist ';' ee ,
-ee > . ,
-ee > . e ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+plist > '[' . elist ']' , V '[' $e ';' '\n' N '(' ')' ']'
+elist > . ee , ']' ';'
+elist > . ee ';' ee , ']' ';'
+elist > . elist ';' ee , ']' ';'
+ee > . , ']' ';'
+ee > . e , ']' ';'
+e > . j , ']' ';'
+e > . v , ']' ';'
+e > . j e , ']' ';'
+e > . v e , ']' ';'
+e > . o v e , ']' ';'
+e > . o '[' e ']' , ']' ';'
+j > . o , ']' ';' N V '('
+v > . V , ']' ';' N V '(' AV '['
+v > . v AV , ']' ';' N V '(' AV '['
+o > . N , V '[' ']' ';' N '('
+o > . klist , V '[' ']' ';' N '('
+o > . p , V '[' ']' ';' N '('
+klist > . '(' elist ')' , V '[' ']' ';' N '('
+p > . v plist , V '[' ']' ';' N '('
+p > . p plist , V '[' ']' ';' N '('
 ---------- state 23 ----------
-e > o v . e ,
-v > v . AV ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+e > o v . e , $e ';' '\n' ')' ']'
+v > v . AV , N V '(' AV
+e > . j , $e ';' '\n' ')' ']'
+e > . v , $e ';' '\n' ']'
+e > . j e , $e ';' '\n' ')' ']'
+e > . v e , $e ';' '\n' ']'
+e > . o v e , $e ';' '\n' ')' ']'
+e > . o '[' e ']' , $e ';' '\n' ']'
+j > . o , $e ';' '\n' N V '('
+v > . V , $e ';' '\n' N V '(' AV '['
+v > . v AV , $e ';' '\n' N V '(' AV '['
+o > . N , V '[' $e ';' '\n' N '('
+o > . klist , V '[' $e ';' '\n' N '('
+o > . p , V '[' $e ';' '\n' N '('
+klist > . '(' elist ')' , V '[' $e ';' '\n' N '(' ')' ']'
+p > . v plist , V '[' $e ';' '\n' N '(' ']'
+p > . p plist , V '[' $e ';' '\n' N '('
 ---------- state 24 ----------
-e > o '[' . e ']' ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+e > o '[' . e ']' , $e ';' '\n' ')' ']'
+e > . j , ']'
+e > . v , ']'
+e > . j e , ']'
+e > . v e , ']'
+e > . o v e , ']'
+e > . o '[' e ']' , ']'
+j > . o , ']' N V '('
+v > . V , ']' N V '(' AV '['
+v > . v AV , ']' N V '(' AV '['
+o > . N , V '[' ']' N '('
+o > . klist , V '[' ']' N '('
+o > . p , V '[' ']' N '('
+klist > . '(' elist ')' , V '[' ']' N '('
+p > . v plist , V '[' ']' N '('
+p > . p plist , V '[' ']' N '('
 ---------- state 25 ----------
-c > IF '[' . slist ']' ,
-slist > . s ,
-slist > . slist ';' s ,
-slist > . slist '\n' s ,
-s > . ,
-s > . e ,
-s > . c ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-c > . IF '[' slist ']' ,
-c > . WHILE '[' slist ']' ,
-c > . DO '[' slist ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+c > IF '[' . slist ']' , $e ';' '\n' '[' ']'
+slist > . s , ']' ';' '\n' ')'
+slist > . slist ';' s , ']' ';' '\n' N
+slist > . slist '\n' s , ']' ';' '\n' N '('
+s > . , ']' ';' '\n' '(' N
+s > . e , ']' ';' '\n' '('
+s > . c , ']' ';' '\n'
+e > . j , ']' ';' '\n'
+e > . v , ']' ';' '\n'
+e > . j e , ']' ';' '\n'
+e > . v e , ']' ';' '\n'
+e > . o v e , ']' ';' '\n'
+e > . o '[' e ']' , ']' ';' '\n'
+c > . IF '[' slist ']' , ']' ';' '\n'
+c > . WHILE '[' slist ']' , ']' ';' '\n'
+c > . DO '[' slist ']' , ']' ';' '\n'
+j > . o , ']' ';' '\n' N V '('
+v > . V , ']' ';' '\n' N V '(' AV '['
+v > . v AV , ']' ';' '\n' N V '(' AV '['
+o > . N , V '[' ']' ';' '\n' N '('
+o > . klist , V '[' ']' ';' '\n' N '('
+o > . p , V '[' ']' ';' '\n' N '('
+klist > . '(' elist ')' , V '[' ']' ';' '\n' N '('
+p > . v plist , V '[' ']' ';' '\n' N '('
+p > . p plist , V '[' ']' ';' '\n' N '('
 ---------- state 26 ----------
-c > WHILE '[' . slist ']' ,
-slist > . s ,
-slist > . slist ';' s ,
-slist > . slist '\n' s ,
-s > . ,
-s > . e ,
-s > . c ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-c > . IF '[' slist ']' ,
-c > . WHILE '[' slist ']' ,
-c > . DO '[' slist ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+c > WHILE '[' . slist ']' , $e ';' '\n' ']'
+slist > . s , ']' ';' '\n'
+slist > . slist ';' s , ']' ';' '\n'
+slist > . slist '\n' s , ']' ';' '\n'
+s > . , ']' ';' '\n'
+s > . e , ']' ';' '\n'
+s > . c , ']' ';' '\n'
+e > . j , ']' ';' '\n'
+e > . v , ']' ';' '\n'
+e > . j e , ']' ';' '\n'
+e > . v e , ']' ';' '\n'
+e > . o v e , ']' ';' '\n'
+e > . o '[' e ']' , ']' ';' '\n'
+c > . IF '[' slist ']' , ']' ';' '\n'
+c > . WHILE '[' slist ']' , ']' ';' '\n'
+c > . DO '[' slist ']' , ']' ';' '\n'
+j > . o , ']' ';' '\n' N V '('
+v > . V , ']' ';' '\n' N V '(' AV '['
+v > . v AV , ']' ';' '\n' N V '(' AV '['
+o > . N , V '[' ']' ';' '\n' N '('
+o > . klist , V '[' ']' ';' '\n' N '('
+o > . p , V '[' ']' ';' '\n' N '('
+klist > . '(' elist ')' , V '[' ']' ';' '\n' N '('
+p > . v plist , V '[' ']' ';' '\n' N '('
+p > . p plist , V '[' ']' ';' '\n' N '('
 ---------- state 27 ----------
-c > DO '[' . slist ']' ,
-slist > . s ,
-slist > . slist ';' s ,
-slist > . slist '\n' s ,
-s > . ,
-s > . e ,
-s > . c ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-c > . IF '[' slist ']' ,
-c > . WHILE '[' slist ']' ,
-c > . DO '[' slist ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+c > DO '[' . slist ']' , $e ';' '\n' ']'
+slist > . s , ']' ';' '\n'
+slist > . slist ';' s , ']' ';' '\n'
+slist > . slist '\n' s , ']' ';' '\n'
+s > . , ']' ';' '\n'
+s > . e , ']' ';' '\n'
+s > . c , ']' ';' '\n'
+e > . j , ']' ';' '\n'
+e > . v , ']' ';' '\n'
+e > . j e , ']' ';' '\n'
+e > . v e , ']' ';' '\n'
+e > . o v e , ']' ';' '\n'
+e > . o '[' e ']' , ']' ';' '\n'
+c > . IF '[' slist ']' , ']' ';' '\n'
+c > . WHILE '[' slist ']' , ']' ';' '\n'
+c > . DO '[' slist ']' , ']' ';' '\n'
+j > . o , ']' ';' '\n' N V '('
+v > . V , ']' ';' '\n' N V '(' AV '['
+v > . v AV , ']' ';' '\n' N V '(' AV '['
+o > . N , V '[' ']' ';' '\n' N '('
+o > . klist , V '[' ']' ';' '\n' N '('
+o > . p , V '[' ']' ';' '\n' N '('
+klist > . '(' elist ')' , V '[' ']' ';' '\n' N '('
+p > . v plist , V '[' ']' ';' '\n' N '('
+p > . p plist , V '[' ']' ';' '\n' N '('
 ---------- state 28 ----------
-p > p plist . ,
+p > p plist . , V '[' $e ';' '\n' N '('
 ---------- state 29 ----------
-klist > '(' elist . ')' ,
-elist > elist . ';' ee ,
+klist > '(' elist . ')' , V '[' $e ';' '\n' N '('
+elist > elist . ';' ee , ')' ';'
 ---------- state 30 ----------
-elist > ee . ,
-elist > ee . ';' ee ,
+elist > ee . , ')' ';' $e '\n' ']'
+elist > ee . ';' ee , ')' ';'
 ---------- state 31 ----------
-ee > e . ,
+ee > e . , ')' ';' ']'
 ---------- state 32 ----------
-slist > slist ';' s . ,
+slist > slist ';' s . , $e ';' '\n' ']'
 ---------- state 33 ----------
-slist > slist '\n' s . ,
+slist > slist '\n' s . , $e ';' '\n' ']'
 ---------- state 34 ----------
-plist > '[' elist . ']' ,
-elist > elist . ';' ee ,
+plist > '[' elist . ']' , V '[' $e ';' '\n' N '(' ']'
+elist > elist . ';' ee , ']' ';'
 ---------- state 35 ----------
-e > o v e . ,
+e > o v e . , $e ';' '\n' ')' ']'
 ---------- state 36 ----------
-e > o '[' e . ']' ,
+e > o '[' e . ']' , $e ';' '\n' ')' ']' '['
 ---------- state 37 ----------
-c > IF '[' slist . ']' ,
-slist > slist . ';' s ,
-slist > slist . '\n' s ,
+c > IF '[' slist . ']' , $e ';' '\n' ']'
+slist > slist . ';' s , ']' ';' '\n'
+slist > slist . '\n' s , ']' ';' '\n'
 ---------- state 38 ----------
-c > WHILE '[' slist . ']' ,
-slist > slist . ';' s ,
-slist > slist . '\n' s ,
+c > WHILE '[' slist . ']' , $e ';' '\n' ']'
+slist > slist . ';' s , ']' ';' '\n'
+slist > slist . '\n' s , ']' ';' '\n'
 ---------- state 39 ----------
-c > DO '[' slist . ']' ,
-slist > slist . ';' s ,
-slist > slist . '\n' s ,
+c > DO '[' slist . ']' , $e ';' '\n' ']'
+slist > slist . ';' s , ']' ';' '\n'
+slist > slist . '\n' s , ']' ';' '\n'
 ---------- state 40 ----------
-klist > '(' elist ')' . ,
+klist > '(' elist ')' . , V '[' $e ';' '\n' N '('
 ---------- state 41 ----------
-elist > elist ';' . ee ,
-ee > . ,
-ee > . e ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+elist > elist ';' . ee , ')' ';' N '[' ']'
+ee > . , ')' ';' '\n'
+ee > . e , ')' ';' ']'
+e > . j , ')' ';'
+e > . v , ')' ';' ']'
+e > . j e , ')' ';'
+e > . v e , ')' ';' ']'
+e > . o v e , ')' ';'
+e > . o '[' e ']' , ')' ';' ']'
+j > . o , ')' ';' N V '('
+v > . V , ')' ';' N V '(' AV '['
+v > . v AV , ')' ';' N V '(' AV '['
+o > . N , V '[' ')' ';' N '('
+o > . klist , V '[' ')' ';' N '('
+o > . p , V '[' ')' ';' N '('
+klist > . '(' elist ')' , V '[' ')' ';' N '('
+p > . v plist , V '[' ')' ';' N '(' ']'
+p > . p plist , V '[' ')' ';' N '('
 ---------- state 42 ----------
-elist > ee ';' . ee ,
-ee > . ,
-ee > . e ,
-e > . j ,
-e > . v ,
-e > . j e ,
-e > . v e ,
-e > . o v e ,
-e > . o '[' e ']' ,
-j > . o ,
-v > . V ,
-v > . v AV ,
-o > . N ,
-o > . klist ,
-o > . p ,
-klist > . '(' elist ')' ,
-p > . v plist ,
-p > . p plist ,
+elist > ee ';' . ee , ')' ';' ']'
+ee > . , ')' ';'
+ee > . e , ')' ';' ']'
+e > . j , ')' ';'
+e > . v , ')' ';' ']'
+e > . j e , ')' ';'
+e > . v e , ')' ';' ']'
+e > . o v e , ')' ';'
+e > . o '[' e ']' , ')' ';' ']'
+j > . o , ')' ';' N V '('
+v > . V , ')' ';' N V '(' AV '['
+v > . v AV , ')' ';' N V '(' AV '['
+o > . N , V '[' ')' ';' N '('
+o > . klist , V '[' ')' ';' N '('
+o > . p , V '[' ')' ';' N '('
+klist > . '(' elist ')' , V '[' ')' ';' N '('
+p > . v plist , V '[' ')' ';' N '(' ']'
+p > . p plist , V '[' ')' ';' N '('
 ---------- state 43 ----------
-plist > '[' elist ']' . ,
+plist > '[' elist ']' . , V '[' $e ';' '\n' N '('
 ---------- state 44 ----------
-e > o '[' e ']' . ,
+e > o '[' e ']' . , $e ';' '\n' ')' ']'
 ---------- state 45 ----------
-c > IF '[' slist ']' . ,
+c > IF '[' slist ']' . , $e ';' '\n' ']'
 ---------- state 46 ----------
-c > WHILE '[' slist ']' . ,
+c > WHILE '[' slist ']' . , $e ';' '\n' ']'
 ---------- state 47 ----------
-c > DO '[' slist ']' . ,
+c > DO '[' slist ']' . , $e ';' '\n' ']'
 ---------- state 48 ----------
-elist > elist ';' ee . ,
+elist > elist ';' ee . , ')' ';' '\n' ']'
 ---------- state 49 ----------
-elist > ee ';' ee . ,
+elist > ee ';' ee . , ')' ';' '\n' ']'
 state token action goto rule
 ----- ----- ------ ---- ----
     0 slist      2    1    0

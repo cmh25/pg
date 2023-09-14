@@ -7,7 +7,7 @@ exit /b 0
 cd test
 echo slr
 cmd /c test.bat slr
-echo eunitr:
+echo slr eunitr:
 cmd /c test.bat slr eunitr
 echo lr1:
 cmd /c test.bat lr1

@@ -10,7 +10,7 @@ usage: ./pg <file> [pretty] [genhc]
     [slr]: build slr(1) parse table (*default*)
     [lr1]: build lr(1) parse table
    [lalr]: build lalr(1) parse table
- [pretty]: pretty pring action table
+ [pretty]: pretty print action table
   [genhc]: generate p.h and p.c
   [first]: print first() for each token
  [follow]: print follow() for each token

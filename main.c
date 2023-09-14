@@ -14,7 +14,7 @@ void usage(char *c) {
   printf("  [genhc]: generate p.h and p.c\n");
   printf("  [first]: print first() for each token\n");
   printf(" [follow]: print follow() for each token\n");
-  printf(" [eunitr]: eliminate unit reductions\n");
+  printf(" [eunitr]: eliminate unit reductions (*experimental*)\n");
   printf(" [fullst]: print the full state table\n");
   printf("  [showd]: show deleted states and transitions\n");
 }

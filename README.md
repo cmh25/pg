@@ -1,7 +1,23 @@
 # pg
 a simple parser generator in c
 
-Takes a grammar spec as input and outputs the parse states and shift/reduce action table.
+Takes a grammar spec as input and outputs the parse states and shift/reduce action table. Defaults to slr(1), but also supports lr(1), lalr(1), and lr(0). Run without any arguments to see synopsis.
+```
+cmh@ubuntu20:~/pg$ ./pg
+usage: ./pg <file> [pretty] [genhc]
+   <file>: grammar definition
+    [lr0]: build lr(0) parse table
+    [slr]: build slr(1) parse table (*default*)
+    [lr1]: build lr(1) parse table
+   [lalr]: build lalr(1) parse table
+ [pretty]: pretty pring action table
+  [genhc]: generate p.h and p.c
+  [first]: print first() for each token
+ [follow]: print follow() for each token
+ [eunitr]: eliminate unit reductions (*experimental*)
+ [fullst]: print the full state table
+  [showd]: show deleted states and transitions
+```
 
 ```
 

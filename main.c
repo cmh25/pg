@@ -21,13 +21,18 @@ int inargv(int c, char **argv, char *a) {
 }
 
 int main(int argc, char **argv) {
-  int d=0;
+  int d=0,m=SLR;
   if(argc<2) { usage(argv[0]); exit(1); }
   if(inargv(argc,argv,"showd")) d=1;
   pgread(argv[1]);
   pgparse();
   pgreport();
-  pgbuild();
+  if(inargv(argc,argv,"slr")) m=SLR;
+  if(inargv(argc,argv,"lr0")) m=LR0;
+  if(inargv(argc,argv,"lr1")) m=LR1;
+  if(inargv(argc,argv,"lalr")) m=LALR;
+  pgbuild(m);
+  if(m==LALR) pglalr();
   if(inargv(argc,argv,"eunitr")) pgeunitr();
   if(inargv(argc,argv,"printstates")) pgprint();
   if(inargv(argc,argv,"pretty")) pgprintt2();

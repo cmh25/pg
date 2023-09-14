@@ -5,6 +5,8 @@
 #include <string.h>
 #include <ctype.h>
 
+static int gmode;
+
 static rule RA[1024];
 static int RN=1;
 
@@ -15,6 +17,8 @@ static int M[10240]; /* mark */
 static int D[10240]; /* deleted */
 static int N;        /* rowcount */
 static int SN;       /* states count */
+static char *C[10240][32]; /* context=first(C) first(0)=$e */
+static int CN[10240];
 
 /* transitions */
 static int   TS[10240]; /* state */
@@ -78,9 +82,21 @@ static char* xfgets(char *s, int n, FILE *f) {
 }
 
 /* production in state */
-static int pins(int s, int r, int m) {
-  int i;
-  for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&&M[i]==m) return 1;
+//static int pins(int s, int r, int m) {
+//  int i;
+//  for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&&M[i]==m) return 1;
+//  return 0;
+//}
+/* production in state */
+static int pins(int s, int r, int m, char **c, int cn) {
+  int i,j;
+  for(i=0;i<N;i++) {
+    if(S[i]==s&&R[i]==r&&M[i]==m&&CN[i]==cn) {
+      for(j=0;j<cn;j++)
+        if(C[i][j]!=c[j]) break;
+      if(j==cn) return 1;
+    }
+  }
   return 0;
 }
 
@@ -234,7 +250,27 @@ void pgprintfollow() {
   printf("\n");
 }
 
-static void add2state(int s, int r, int m) {
+static void propagatectx(int s, int r, int m) {
+  int i,j,k,u=0;
+  char *n=RA[r].rhs[m];
+  for(i=0;i<N;i++) {
+    if(S[i]!=s) continue;
+    if(R[i]==r&&M[i]==m) {
+      for(j=i+1;j<N;j++) {
+        if(S[j]!=s) continue;
+        if(n==RA[R[j]].lhs) {
+          for(k=0;k<CN[i];k++) {
+            for(m=0;m<CN[j];m++) if(C[i][k]==C[j][m]) break;
+            if(m==CN[j]) { C[j][CN[j]++]=C[i][k]; u=1; }
+          }
+          if(u) { propagatectx(s,R[j],0); u=0; }
+        }
+      }
+    }
+  }
+}
+
+static void add2state0(int s, int r, int m) {
   int i;
   for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&&M[i]==m) break;
   if(i!=N) return;
@@ -243,7 +279,28 @@ static void add2state(int s, int r, int m) {
   M[N++]=m;
 }
 
-static void closure(int s) {
+static void add2state1(int s, int r, int m, char **c, int cn) {
+  int i=0,j,k,u=0;
+  for(i=0;i<N;i++) {
+    if(S[i]!=s) continue;
+    if(R[i]==r&&M[i]==m) {
+      for(j=0;j<cn;j++) {
+        for(k=0;k<CN[i];k++) if(C[i][k]==c[j]) break;
+        if(k==CN[i]) { C[i][CN[i]++]=c[j]; u=1; }
+      }
+      if(u) { propagatectx(s,r,m); u=0; }
+      return;
+    }
+  }
+  S[N]=s;
+  R[N]=r;
+  M[N]=m;
+  for(i=0;i<cn;i++) C[N][i]=c[i];
+  CN[N]=cn;
+  N++;
+}
+
+static void closure0(int s) {
   int i,j,k,c;
   char *u[128];
   rule *rp;
@@ -253,14 +310,53 @@ static void closure(int s) {
     for(j=0;j<RN;j++) {
       rp=&RA[j];
       if(u[i]!=rp->lhs) continue;
-      if(pins(s,j,0)) continue;
-      add2state(s,j,0);
+      if(pins(s,j,0,0,0)) continue;
+      add2state0(s,j,0);
       if(isnt(rp->rhs[0])) {
         for(k=0;k<c;k++) if(u[k]==rp->rhs[0]) break;
         if(k==c) u[c++]=rp->rhs[0];
       }
     }
   }
+}
+
+static void closure1(int s) {
+  int i,j,k,c,p;
+  rule *r0,*r1;
+  char *ctx[32],*n;
+  int ctn=0;
+  for(i=0;i<N;i++) {
+    ctn=0;
+    if(S[i]!=s) continue;
+    r0=&RA[R[i]];
+    if(r0->rhsi==M[i]) continue;
+    if(ist(r0->rhs[M[i]])) continue;
+    for(j=M[i]+1;j<r0->rhsi;j++)
+      ctx[ctn++]=r0->rhs[j];
+    for(j=0;j<CN[i];j++)
+      ctx[ctn++]=C[i][j];
+    n=RA[R[i]].rhs[M[i]];
+    if(M[i]+1!=r0->rhsi) {
+      k=first(ctx,ctn);
+      for(j=0;j<RN;j++) {
+        r1=&RA[j];
+        if(r1->lhs!=n) continue;
+        add2state1(s,j,0,F,k);
+      }
+    }
+    else {
+      for(j=0;j<RN;j++) {
+        r1=&RA[j];
+        if(r1->lhs!=n) continue;
+        add2state1(s,j,0,ctx,ctn);
+      }
+    }
+  }
+}
+
+static void closure(int s) {
+  if(gmode==LR1||gmode==LALR) closure1(s);
+  else closure0(s);
 }
 
 static char esc[256];
@@ -276,8 +372,20 @@ static char* escape(char *s) {
   return esc;
 }
 
-static void printmp(int r, int m) {
-  int k;
+//static void printmp(int r, int m) {
+//  int k;
+//  rule *rp=&RA[r];
+//  printf("%s %s",rp->lhs,rp->op);
+//  for(k=0;k<rp->rhsi;k++) {
+//    if(k==m) printf(" .");
+//    printf(" %s",escape(rp->rhs[k]));
+//  }
+//  if(m==rp->rhsi) printf(" .");
+//}
+
+static void printmp(int r, int m, char **c, int cn) {
+  int i,j,k;
+  char *u[32];
   rule *rp=&RA[r];
   printf("%s %s",rp->lhs,rp->op);
   for(k=0;k<rp->rhsi;k++) {
@@ -285,6 +393,10 @@ static void printmp(int r, int m) {
     printf(" %s",escape(rp->rhs[k]));
   }
   if(m==rp->rhsi) printf(" .");
+  if(gmode==LR1||gmode==LALR) {
+    printf(" ,");
+    for(i=0;i<cn;i++) printf(" %s",c[i]);
+  }
 }
 
 static void addtrans(int s, char *t, int a, int g, int r, int m) {
@@ -293,15 +405,15 @@ static void addtrans(int s, char *t, int a, int g, int r, int m) {
     if(TS[i]!=s||TT[i]!=t) continue;
     if(a==0&&TA[i]==0&&TR[i]&&TR[i]!=r) {
       printf("warning: reduce/reduce conflict state[%d] token[%s]\n",s,t);
-      printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
-      printf("         %d. ",r); printmp(r,m); printf("\n");
+      printf("         %d. ",TR[i]); printmp(TR[i],TM[i],0,0); printf("\n");
+      printf("         %d. ",r); printmp(r,m,0,0); printf("\n");
       conflicts++;
       return;
     }
     else if(a==0&&TA[i]==1) {
       printf("warning: shift/reduce conflict state[%d] token[%s]\n",s,t);
-      printf("         %d. ",TR[i]); printmp(TR[i],TM[i]); printf("\n");
-      printf("         %d. ",r); printmp(r,m); printf("\n");
+      printf("         %d. ",TR[i]); printmp(TR[i],TM[i],0,0); printf("\n");
+      printf("         %d. ",r); printmp(r,m,0,0); printf("\n");
       conflicts++;
       return;
     }
@@ -323,7 +435,7 @@ static void addtrans(int s, char *t, int a, int g, int r, int m) {
   TM[TN++]=m;
 }
 
-static void goto_(int s, char *p) {
+static void goto0(int s, char *p) {
   int i,j,k,f=0,b,c=0;
   char *rs,*nta[128];
   rule *rp;
@@ -334,15 +446,51 @@ static void goto_(int s, char *p) {
     rp=&RA[R[i]];
     rs=rp->rhs[M[i]];
     if(rp->rhsi==M[i]) { /* default reduce rule */
-      addtrans(s,rs?rs:str("$e"),0,0,R[i],M[i]);
-      j=followi(rp->lhs);
-      if(j!=-1) for(k=0;k<AC[j];k++) addtrans(s,AV[j][k],0,0,R[i],M[i]);
+      if(gmode==SLR) {
+        addtrans(s,rs?rs:str("$e"),0,0,R[i],M[i]);
+        j=followi(rp->lhs);
+        if(j!=-1) for(k=0;k<AC[j];k++) addtrans(s,AV[j][k],0,0,R[i],M[i]);
+      }
       continue;
     }
     else if(p==rs) {
-      if(!pins(SN,R[i],M[i])) {
+      if(!pins(SN,R[i],M[i],0,0)) {
         f=1;
-        add2state(SN,R[i],M[i]+1);
+        add2state0(SN,R[i],M[i]+1);
+        if((b=isnt(rs))) {
+          for(j=0;j<c;j++) if(nta[j]==rs) break;
+          if(j!=c) continue;
+          else nta[c++]=rs;
+        }
+        addtrans(s,rs?rs:str(""),b?2:1,SN,R[i],M[i]);
+      }
+    }
+  }
+  if(f) closure(SN);
+}
+
+static void goto1(int s, char *p) {
+  int i,j,k,f=0,b,c=0,m;
+  char *rs,*nta[128];
+  rule *rp;
+  GN=N; /* in case this state is not added */
+  GTN=TN; /* in case this state is not added */
+  for(i=0;i<N;i++) {
+    if(S[i]!=s) continue;
+    rp=&RA[R[i]];
+    rs=rp->rhs[M[i]];
+    if(rp->rhsi==M[i]) { /* default reduce rule */
+      /* for any lookahead */
+      for(j=0;j<CN[i];j++) {
+        k=firsti(C[i][j]);
+        for(m=0;m<FC[k];m++)
+          addtrans(s,FV[k][m],0,0,R[i],M[i]);
+      }
+    }
+    else if(p==rs) {
+      if(!pins(SN,R[i],M[i]+1,C[i],CN[i])) {
+        f=1;
+        add2state1(SN,R[i],M[i]+1,C[i],CN[i]);
         if((b=isnt(rs))) {
           for(j=0;j<c;j++) if(nta[j]==rs) break;
           if(j!=c) continue;
@@ -477,13 +625,33 @@ void pgreport() {
 }
 
 /* goto items in states */
+//static int gins() {
+//  int i,j,k,n;
+//  for(i=0;i<SN;i++) {
+//    n=GN;
+//    for(j=0;j<GN;j++) {
+//      if(S[j]!=i) continue;
+//      for(k=GN;k<N;k++) if(R[j]==R[k]&&M[j]==M[k]) ++n;
+//    }
+//    if(N!=n) continue;
+//    return i;
+//  }
+//  return -1;
+//}
 static int gins() {
-  int i,j,k,n;
+  int i,j,k,n,m;
   for(i=0;i<SN;i++) {
     n=GN;
     for(j=0;j<GN;j++) {
       if(S[j]!=i) continue;
-      for(k=GN;k<N;k++) if(R[j]==R[k]&&M[j]==M[k]) ++n;
+      for(k=GN;k<N;k++) {
+        if(R[j]==R[k]&&M[j]==M[k]&&CN[j]==CN[k]) {
+          for(m=0;m<CN[j];m++) {
+            if(C[j][m]!=C[k][m]) break;
+          }
+          if(m==CN[j]) ++n;
+        }
+      }
     }
     if(N!=n) continue;
     return i;
@@ -507,15 +675,18 @@ static int getcomb() {
   return -1;
 }
 
-void pgbuild() {
+void pgbuild(int m) {
   int i,j,k,c,s;
   char *u[128];
+  gmode=m;
   N=SN=1;
+  if(gmode==LR1||gmode==LALR) C[0][0]=str("$e"); CN[0]++;
   closure(0);
   for(i=0;i<SN;i++) {
     c=ufrhs(i,u);
     for(j=0;j<c;j++) {
-      goto_(i,u[j]);
+      if(gmode==LR1||gmode==LALR) goto1(i,u[j]);
+      else goto0(i,u[j]);
       s=gins();
       if(s<0) SN++;
       else { N=GN; for(k=0;k<TN;k++) if(TG[k]==SN) TG[k]=s; }
@@ -528,7 +699,7 @@ void pgprints(int i) {
   printf("---------- state %d ----------\n",i);
   for(j=0;j<N;j++) {
     if(S[j]!=i) continue;
-    if(!D[j]) { printmp(R[j],M[j]); printf("\n"); }
+    if(!D[j]) { printmp(R[j],M[j],0,0); printf("\n"); }
   }
 }
 
@@ -899,7 +1070,7 @@ void pgeunitr() {
           if(DR[k]!=TT[p]) continue;
           for(q=0;q<N;q++) {
             if(TG[p]!=S[q]) continue;
-            add2state(SN,R[q],M[q]);
+            add2state0(SN,R[q],M[q]);
             b=1;
           }
           if(b) copytrans(TG[p],SN);
@@ -938,4 +1109,128 @@ void pgeunitr() {
     if(TT[i]==str("$a")) continue;
     for(j=0;j<LFN;j++) if(derives(TT[i],LF[j])) { TT[i]=LF[j]; break; }
   }
+}
+
+static int cmpcore(int p, int q) {
+  int i,j,k,pn=0,qn=0;
+  for(i=0;i<N;i++) if(S[i]==p) pn++;
+  for(j=0;j<N;j++) if(S[j]==q) qn++;
+  if(pn!=qn) return 0;
+  for(i=0;i<N;i++) if(S[i]==p) break;
+  for(j=0;j<N;j++) if(S[j]==q) break;
+  for(k=0;k<pn;k++,i++,j++) if(R[i]!=R[j]||M[i]!=M[j]) break;
+  return k==pn;
+}
+
+static void mergectx(int p, int q) {
+  int i=0,j=0,k,m;
+  while(S[i]!=p)i++;
+  while(S[j]!=q)j++;
+  while(S[i]==p) {
+    for(k=0;k<CN[j];k++,i++,j++) {
+      for(m=0;m<CN[i];m++) if(C[i][m]==C[j][k]) break;
+      if(m==CN[i]) C[i][CN[i]++]=C[j][k];
+    }
+  }
+}
+
+static void updatetrans(int p, int q) {
+  int i;
+  for(i=0;i<TN;i++) {
+    if(TS[i]==q) TS[i]=p;
+    if(TG[i]==q) TG[i]=p;
+  }
+}
+
+static void sorttrans() {
+  int *ts=(int*)malloc(sizeof(int)*TN);
+  char **tt=(char**)malloc(sizeof(char*)*TN);
+  int *ta=(int*)malloc(sizeof(int)*TN);
+  int *tg=(int*)malloc(sizeof(int)*TN);
+  int *tr=(int*)malloc(sizeof(int)*TN);
+  int *tm=(int*)malloc(sizeof(int)*TN);
+  int *td=(int*)malloc(sizeof(int)*TN);
+  memcpy(ts,TS,sizeof(int)*TN);
+  memcpy(tt,TT,sizeof(char*)*TN);
+  memcpy(ta,TA,sizeof(int)*TN);
+  memcpy(tg,TG,sizeof(int)*TN);
+  memcpy(tr,TR,sizeof(int)*TN);
+  memcpy(tm,TM,sizeof(int)*TN);
+  memcpy(td,TD,sizeof(int)*TN);
+  int i,j,k=0;
+  for(i=0;i<SN;i++) {
+    for(j=0;j<TN;j++) {
+      if(ts[j]!=i) continue;
+      TS[k]=ts[j];
+      TT[k]=tt[j];
+      TA[k]=ta[j];
+      TG[k]=tg[j];
+      TR[k]=tr[j];
+      TM[k]=tm[j];
+      TD[k]=td[j];
+      k++;
+    }
+  }
+
+  free(ts); free(tt); free(ta); free(tg); free(tr); free(tm); free(td);
+}
+
+static void purgeds() {
+  int i,j=0;
+  int *s=(int*)malloc(sizeof(int)*N);
+  int *r=(int*)malloc(sizeof(int)*N);
+  int *m=(int*)malloc(sizeof(int)*N);
+  int *d=(int*)malloc(sizeof(int)*N);
+  char *c[N][32];
+  int *cn=(int*)malloc(sizeof(int)*N);
+  memcpy(s,S,sizeof(int)*N);
+  memcpy(r,R,sizeof(int)*N);
+  memcpy(m,M,sizeof(int)*N);
+  memcpy(d,D,sizeof(int)*N);
+  memcpy(c,C,sizeof(char*)*N*32);
+  memcpy(cn,CN,sizeof(int)*N);
+
+  for(i=0;i<N;i++) {
+    if(d[i]) continue;
+    S[j]=s[i];
+    R[j]=r[i];
+    M[j]=m[i];
+    D[j]=d[i];
+    memcpy(C[j],c[i],sizeof(c[i]));
+    CN[j]=cn[i];
+    j++;
+  }
+  N=j;
+
+  free(s); free(r); free(m); free(d); free(cn);
+}
+
+static void resequence() {
+  int i,j,k=-1,n;
+  for(i=0;i<N;i++) {
+    if(S[i]==k) continue;
+    k++;
+    if(S[i]==k) continue;
+    n=S[i];
+    for(j=0;j<N;j++) if(S[j]==n) S[j]=k;
+    for(j=0;j<TN;j++) if(TS[j]==n) TS[j]=k;
+    for(j=0;j<TN;j++) if(TG[j]==n) TG[j]=k;
+  }
+  SN=k+1;
+}
+
+void pglalr() {
+  int i,j,k,f=1;
+  for(i=0;i<SN;i++) {
+    for(j=i+1;j<SN;j++) {
+      if(cmpcore(i,j)) {
+        mergectx(i,j);
+        updatetrans(i,j);
+        for(k=0;k<N;k++) if(S[k]==j) D[k]=1;
+      }
+    }
+  }
+  sorttrans();
+  purgeds();
+  resequence();
 }

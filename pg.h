@@ -9,10 +9,15 @@ typedef struct {
   int rhsi;
 } rule;
 
+#define LR0 0
+#define LR1 1
+#define SLR 2
+#define LALR 3
+
 void pgread(char *g);
 void pgparse();
 void pgreport();
-void pgbuild();
+void pgbuild(int m);
 void pgprints(int i);
 void pgprint();
 void pgprintst(int d);
@@ -23,5 +28,6 @@ void pgprintfollow();
 void pgh();
 void pgc();
 void pgeunitr();
+void pglalr();
 
 #endif /* PG_H */

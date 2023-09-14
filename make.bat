@@ -5,11 +5,11 @@ cl main.c pg.c show.c /Fe:pg
 exit /b 0
 :test
 cd test
-cmd /c test.bat
+cmd /c test.bat slr
 cd ..
 echo eunitr:
 cd test
-cmd /c testeunitr.bat
+cmd /c test.bat slr eunitr
 cd ..
 exit /b 0
 :ex

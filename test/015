@@ -1,0 +1,29 @@
+# k32
+slist > s | slist ';' s | slist '\n' s
+s > | e | c
+c > IF '[' slist ']'
+c > WHILE '[' slist ']'
+c > DO '[' slist ']'
+e > j
+e > v
+e > j e                    # f 1, f[1]2, o i, (e)i, .(), %2
+e > v e
+e > o v e
+e > o '[' e ']'            # index
+o > N
+o > klist
+o > p
+j > o                      # juxtaposition
+v > V | v AV
+p > v plist                # projection, f[1]
+p > p plist                # f[1][2]
+plist > '[' elist ']'
+klist > '(' elist ')'
+elist > ee | ee ';' ee
+elist > elist ';' ee
+ee > | e                   # empty
+
+# lex
+# N > -4 -3 -2 -1 0 1 2 3 4 5 6
+# V > + - * % & | < > = ^ ! ~ , # _ $ ? @ . {}
+# AV > ' \: /: ': / \

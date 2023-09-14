@@ -1,4 +1,4 @@
 all:
-	./test.sh
-	./testeunitr.sh
+	./test.sh slr
+	./test.sh slr eunitr
 

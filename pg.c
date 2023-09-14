@@ -1181,7 +1181,8 @@ static void purgeds() {
   int *r=(int*)malloc(sizeof(int)*N);
   int *m=(int*)malloc(sizeof(int)*N);
   int *d=(int*)malloc(sizeof(int)*N);
-  char *c[N][32];
+  //char *c[N][32];
+  char **c=(char**)malloc(sizeof(char*)*N*32);
   int *cn=(int*)malloc(sizeof(int)*N);
   memcpy(s,S,sizeof(int)*N);
   memcpy(r,R,sizeof(int)*N);

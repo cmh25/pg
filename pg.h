@@ -13,6 +13,7 @@ typedef struct {
 #define LR1 1
 #define SLR 2
 #define LALR 3
+#define LL1 4
 
 void pgread(char *g);
 void pgparse();
@@ -29,5 +30,6 @@ void pgh();
 void pgc();
 void pgeunitr();
 void pglalr();
+void pgbuildll1(int m);
 
 #endif /* PG_H */

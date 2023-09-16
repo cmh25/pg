@@ -152,6 +152,7 @@ static void firstgen() {
 }
 static int first(char **p, int c) {
   int i,j,n,k=0,b=0,m;
+  if(!c) { F[k++]=0; return k; } /* empty */
   for(i=0;i<c;i++) {
     if(ist(p[i])) { F[k++]=p[i]; return k; }
     n=firsti(p[i]);
@@ -1184,4 +1185,63 @@ void pglalr() {
   sorttrans();
   purgeds();
   resequence();
+}
+
+/* ll(1) */
+static int LC[256][256]; /* column per terminal, row per nonterminal */
+void pgbuildll1(int m) {
+  int i,j,k,n,p,cn,t[256],e;
+  rule *rp;
+  char *a,*c[256],b[256],*vc[256][256];
+  void *v[256];
+
+  for(i=0;i<NTC;i++) for(j=0;j<TC;j++) LC[i][j]=-1;
+  for(i=0;i<RN;i++) {
+    rp=&RA[i];
+    n=first(rp->rhs,rp->rhsi);
+    e=0;
+    for(j=0;j<n;j++) {
+      if(!F[j]) { e=1; continue; }
+      for(k=0;k<TC;k++) if(F[j]==T[k]) break;
+      for(p=0;p<NTC;p++) if(rp->lhs==NT[p]) break;
+      if(LC[p][k]!=-1) {
+        printf("warning: first/first\n");
+        printf("         %d. ",LC[p][k]); printmp(LC[p][k],-1,0,0); printf("\n");
+        printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
+        conflicts++;
+      }
+      else LC[p][k]=i;
+    }
+    if(!e) continue;
+    /* first() had empty */
+    n=followi(rp->lhs);
+    for(j=0;j<AC[n];j++) {
+      for(k=0;k<TC;k++) if(AV[n][j]==T[k]) break;
+      for(p=0;p<NTC;p++) if(rp->lhs==NT[p]) break;
+      if(LC[p][k]!=-1) {
+        printf("warning: first/follow\n");
+        printf("         %d. ",LC[p][k]); printmp(LC[p][k],-1,0,0); printf("\n");
+        printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
+        conflicts++;
+      }
+      else LC[p][k]=i;
+    }
+  }
+
+  cn=TC+1;
+  c[0]=str("");
+  for(i=0;i<TC;i++) c[i+1]=T[i];
+  for(i=0;i<cn;i++) t[i]=4;
+  v[0]=NT;
+  for(i=1;i<cn;i++) {
+    for(j=0;j<NTC;j++) {
+      if(LC[j][i-1]==-1) *b=0;
+      else sprintf(b,"%2d",LC[j][i-1]);
+      vc[i][j]=str(b);
+    }
+    v[i]=vc[i];
+  }
+  printf("\n");
+  a = show(cn,NTC,c,t,v,0);
+  if(a) { printf("%s",a); free(a); }
 }

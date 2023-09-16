@@ -35,15 +35,21 @@ int main(int argc, char **argv) {
   if(inargv(argc,argv,"lr0")) m=LR0;
   if(inargv(argc,argv,"lr1")) m=LR1;
   if(inargv(argc,argv,"lalr")) m=LALR;
-  pgbuild(m);
-  if(m==LALR) pglalr();
-  if(inargv(argc,argv,"eunitr")) pgeunitr();
-  if(inargv(argc,argv,"printstates")) pgprint();
-  if(inargv(argc,argv,"pretty")) pgprintt2();
-  else pgprintt(d);
-  if(inargv(argc,argv,"genhc")) { pgh(); pgc(); }
+  if(inargv(argc,argv,"ll1")) {
+    m=LL1;
+    pgbuildll1(m);
+  }
+  else {
+    pgbuild(m);
+    if(m==LALR) pglalr();
+    if(inargv(argc,argv,"eunitr")) pgeunitr();
+    if(inargv(argc,argv,"printstates")) pgprint();
+    if(inargv(argc,argv,"pretty")) pgprintt2();
+    else pgprintt(d);
+    if(inargv(argc,argv,"genhc")) { pgh(); pgc(); }
+    if(inargv(argc,argv,"fullst")) pgprintst(d);
+  }
   if(inargv(argc,argv,"first")) pgprintfirst();
   if(inargv(argc,argv,"follow")) pgprintfollow();
-  if(inargv(argc,argv,"fullst")) pgprintst(d);
   return 0;
 }

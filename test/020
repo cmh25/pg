@@ -1,0 +1,8 @@
+E ::= T EP
+EP ::= + T EP
+EP ::=
+T ::= F TP
+TP ::= * F TP
+TP ::=
+F ::= ( E )
+F ::= id

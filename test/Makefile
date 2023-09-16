@@ -4,6 +4,7 @@ all:
 	./test.sh lr1
 	./test.sh lalr
 	./test.sh lr0
+	./test.sh ll1
 
 testv:
 	./valgrind.sh slr
@@ -11,3 +12,4 @@ testv:
 	./valgrind.sh lr1
 	./valgrind.sh lalr
 	./valgrind.sh lr0
+	./valgrind.sh ll1

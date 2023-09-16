@@ -1,7 +1,7 @@
 # pg
 a simple parser generator in c
 
-Takes a grammar spec as input and outputs the parse states and shift/reduce action table. Defaults to slr(1), but also supports lr(1), lalr(1), and lr(0). Run without any arguments to see synopsis.
+Takes a grammar spec as input and outputs the parse states and shift/reduce action table. Defaults to slr(1), but also supports lr(1), lalr(1), lr(0), and ll(1). Run without any arguments to see synopsis.
 ```
 cmh@ubuntu20:~/pg$ ./pg
 usage: ./pg <file> [pretty] [genhc]
@@ -10,6 +10,7 @@ usage: ./pg <file> [pretty] [genhc]
     [slr]: build slr(1) parse table (*default*)
     [lr1]: build lr(1) parse table
    [lalr]: build lalr(1) parse table
+    [ll1]: build ll(1) parse table
  [pretty]: pretty print action table
   [genhc]: generate p.h and p.c
   [first]: print first() for each token
@@ -20,7 +21,6 @@ usage: ./pg <file> [pretty] [genhc]
 ```
 
 ```
-
 cmh@ubuntu20:~/pg$ cat test/000
 # dragon book example
 e > e '+' t

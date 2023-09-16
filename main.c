@@ -10,6 +10,7 @@ void usage(char *c) {
   printf("    [slr]: build slr(1) parse table (*default*)\n");
   printf("    [lr1]: build lr(1) parse table\n");
   printf("   [lalr]: build lalr(1) parse table\n");
+  printf("    [ll1]: build ll(1) parse table\n");
   printf(" [pretty]: pretty print action table\n");
   printf("  [genhc]: generate p.h and p.c\n");
   printf("  [first]: print first() for each token\n");

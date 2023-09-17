@@ -1298,6 +1298,7 @@ void pgcll() {
   for(i=0;i<RN;i++) {
     rp=&RA[i];
     fprintf(fp,"{");
+    if(!rp->rhsi) fprintf(fp,"-1");
     for(j=0;j<rp->rhsi;j++) {
       c=rp->rhs[j];
       for(k=0;k<NTC;k++) if(c==NT[k]) break;

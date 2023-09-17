@@ -1,0 +1,5 @@
+# no operator precedence 
+e > o ez
+ez > | V e
+o > N
+o > ( e )

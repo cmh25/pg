@@ -1279,7 +1279,8 @@ void pgcll() {
   if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
   fprintf(fp,"#include \"p.h\"\n");
   fprintf(fp,"#include <stdio.h>\n");
-  fprintf(fp,"#include <stdlib.h>\n\n");
+  fprintf(fp,"#include <stdlib.h>\n");
+  fprintf(fp,"#include <string.h>\n\n");
 
   fprintf(fp,"/*\n%s*/\n\n",arules);
 
@@ -1317,8 +1318,8 @@ void pgcll() {
   fprintf(fp,"};\n");
 
   fprintf(fp,"typedef struct { char v; int n; } pn;\n");
-  fprintf(fp,"static int *S,*R;\n");
-  fprintf(fp,"static pn *V;\n");
+  fprintf(fp,"static int S[1024],R[1024];\n");
+  fprintf(fp,"static pn V[1024];\n");
   fprintf(fp,"static int si=-1,ri=-1,vi=-1;\n\n");
 
   for(i=0;i<RN;i++) fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
@@ -1332,6 +1333,7 @@ void pgcll() {
 "\n"
 "void pgreset() {\n"
 "  ti=0;tc=0;si=-1;ri=-1;vi=-1;\n"
+"  memset(V,0,sizeof(V));\n"
 "}\n"
 "\n"
 "void pgpush(int tt, int tv) {\n"
@@ -1340,13 +1342,10 @@ void pgcll() {
 "}\n"
 "\n"
 "void pgparse() {\n"
-"  int i,j,k=-1,r;\n"
+"  int i,j,r;\n"
 "  if(tc==1) return;\n"
-"  S=malloc(sizeof(int)*1024);\n"
-"  R=malloc(sizeof(int)*1024);\n"
-"  V=malloc(sizeof(pn)*1024);\n"
-"  S[++si]=%s;\n"
-"  S[++si]=%s;\n"
+"  S[++si]=%s; /* $e */\n"
+"  S[++si]=%s; /* $a */\n"
 "  for(i=0;;i++) {\n"
 "    if(S[si]==t[ti]) {\n"
 "      V[++vi].n=v[ti];\n"

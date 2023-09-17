@@ -1,6 +1,7 @@
 #include "p.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
 # no operator precedence
@@ -28,8 +29,8 @@ static int RT[6][3]={
 
 static int RC[6]={1,2,0,2,1,3};
 typedef struct { char v; int n; } pn;
-static int *S,*R;
-static pn *V;
+static int S[1024],R[1024];
+static pn V[1024];
 static int si=-1,ri=-1,vi=-1;
 
 static void r000() { /* $a > e */
@@ -64,6 +65,7 @@ static int v[1024];
 
 void pgreset() {
   ti=0;tc=0;si=-1;ri=-1;vi=-1;
+  memset(V,0,sizeof(V));
 }
 
 void pgpush(int tt, int tv) {
@@ -72,13 +74,10 @@ void pgpush(int tt, int tv) {
 }
 
 void pgparse() {
-  int i,j,k=-1,r;
+  int i,j,r;
   if(tc==1) return;
-  S=malloc(sizeof(int)*1024);
-  R=malloc(sizeof(int)*1024);
-  V=malloc(sizeof(pn)*1024);
-  S[++si]=T008;
-  S[++si]=T000;
+  S[++si]=T008; /* $e */
+  S[++si]=T000; /* $a */
   for(i=0;;i++) {
     if(S[si]==t[ti]) {
       V[++vi].n=v[ti];

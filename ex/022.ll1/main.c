@@ -50,4 +50,5 @@ int main() {
     p=b;
     printf("  ");
   }
+  return 0;
 } 

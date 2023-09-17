@@ -526,11 +526,13 @@ static void spqc(char *q, char *s, char m) {
   }
   free(t);
 }
+static char arules[10240];
 void pgread(char *g) {
   FILE *fp;
   char b[1024],p[256],q[256],r[1024],*s,*z;
   if(!(fp=fopen(g,"r"))) { fprintf(stderr,"error: file not found\n"); exit(1); }
   while(xfgets(b,1024,fp)) {
+    strcat(arules,b); strcat(arules,"\n");
     if(!*b) continue;
     if('#'==*b) continue;
     split(b,'#',&z);
@@ -1188,14 +1190,14 @@ void pglalr() {
 }
 
 /* ll(1) */
-static int LC[256][256]; /* column per terminal, row per nonterminal */
-void pgbuildll1(int m) {
+static int LL[256][256]; /* column per terminal, row per nonterminal */
+void pgbuildll(int m) {
   int i,j,k,n,p,cn,t[256],e;
   rule *rp;
   char *a,*c[256],b[256],*vc[256][256];
   void *v[256];
 
-  for(i=0;i<NTC;i++) for(j=0;j<TC;j++) LC[i][j]=-1;
+  for(i=0;i<NTC;i++) for(j=0;j<TC;j++) LL[i][j]=-1;
   for(i=0;i<RN;i++) {
     rp=&RA[i];
     n=first(rp->rhs,rp->rhsi);
@@ -1204,13 +1206,13 @@ void pgbuildll1(int m) {
       if(!F[j]) { e=1; continue; }
       for(k=0;k<TC;k++) if(F[j]==T[k]) break;
       for(p=0;p<NTC;p++) if(rp->lhs==NT[p]) break;
-      if(LC[p][k]!=-1) {
+      if(LL[p][k]!=-1) {
         printf("warning: first/first\n");
-        printf("         %d. ",LC[p][k]); printmp(LC[p][k],-1,0,0); printf("\n");
+        printf("         %d. ",LL[p][k]); printmp(LL[p][k],-1,0,0); printf("\n");
         printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
         conflicts++;
       }
-      else LC[p][k]=i;
+      else LL[p][k]=i;
     }
     if(!e) continue;
     /* first() had empty */
@@ -1218,13 +1220,13 @@ void pgbuildll1(int m) {
     for(j=0;j<AC[n];j++) {
       for(k=0;k<TC;k++) if(AV[n][j]==T[k]) break;
       for(p=0;p<NTC;p++) if(rp->lhs==NT[p]) break;
-      if(LC[p][k]!=-1) {
+      if(LL[p][k]!=-1) {
         printf("warning: first/follow\n");
-        printf("         %d. ",LC[p][k]); printmp(LC[p][k],-1,0,0); printf("\n");
+        printf("         %d. ",LL[p][k]); printmp(LL[p][k],-1,0,0); printf("\n");
         printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
         conflicts++;
       }
-      else LC[p][k]=i;
+      else LL[p][k]=i;
     }
   }
 
@@ -1235,8 +1237,8 @@ void pgbuildll1(int m) {
   v[0]=NT;
   for(i=1;i<cn;i++) {
     for(j=0;j<NTC;j++) {
-      if(LC[j][i-1]==-1) *b=0;
-      else sprintf(b,"%2d",LC[j][i-1]);
+      if(LL[j][i-1]==-1) *b=0;
+      else sprintf(b,"%2d",LL[j][i-1]);
       vc[i][j]=str(b);
     }
     v[i]=vc[i];
@@ -1244,4 +1246,125 @@ void pgbuildll1(int m) {
   printf("\n");
   a = show(cn,NTC,c,t,v,0);
   if(a) { printf("%s",a); free(a); }
+}
+
+static char *tend,*taccept;
+void pghll() {
+  int i,j,k,n=0;
+  FILE *fp;
+  char *ta[1024];
+  if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
+  fprintf(fp,"#ifndef P_H\n#define P_H\n\n");
+  for(i=0;i<NTC;i++) ta[n++]=NT[i];
+  for(i=0;i<TC;i++) ta[n++]=T[i];
+  for(i=0;i<n;i++) {
+    sprintf(TL[i],"T%03d",i);
+    fprintf(fp,"#define T%03d %3d /* %s */\n",i,i,ta[i]);
+    if(ta[i]==str("$a")) taccept=TL[i];
+    if(ta[i]==str("$e")) tend=TL[i];
+  }
+  fprintf(fp,"\n");
+  fprintf(fp,"void pgreset();\n");
+  fprintf(fp,"void pgpush(int tt, int tv);\n");
+  fprintf(fp,"void pgparse();\n");
+  fprintf(fp,"\n#endif /* P_H */\n");
+  fclose(fp);
+}
+
+void pgcll() {
+  int i,j,k,*t,n,b=0,m;
+  FILE *fp;
+  rule *rp;
+  char *c;
+  if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
+  fprintf(fp,"#include \"p.h\"\n");
+  fprintf(fp,"#include <stdio.h>\n");
+  fprintf(fp,"#include <stdlib.h>\n\n");
+
+  fprintf(fp,"/*\n%s*/\n\n",arules);
+
+  fprintf(fp,"static int LL[%d][%d]={\n",TC,NTC+TC);
+  for(i=0;i<NTC;i++) {
+    fprintf(fp,"{");
+    for(j=0;j<NTC;j++) fprintf(fp,"-1,");
+    for(j=0;j<TC;j++) fprintf(fp,"%d%s",LL[i][j],j==TC-1?"":",");
+    fprintf(fp,"}%s\n",i==NTC-1?"":",");
+  }
+  fprintf(fp,"};\n\n");
+
+  m=0;
+  for(i=0;i<RN;i++) if(m<RA[i].rhsi) m=RA[i].rhsi;
+  fprintf(fp,"static int RT[%d][%d]={\n",RN,m);
+  for(i=0;i<RN;i++) {
+    rp=&RA[i];
+    fprintf(fp,"{");
+    for(j=0;j<rp->rhsi;j++) {
+      c=rp->rhs[j];
+      for(k=0;k<NTC;k++) if(c==NT[k]) break;
+      if(k<NTC) fprintf(fp,"%s%s",TL[k],j==rp->rhsi-1?"":",");
+      else {
+        for(k=0;k<TC;k++) if(c==T[k]) break;
+        if(k<TC) { fprintf(fp,"%s%s",TL[k+NTC],j==rp->rhsi-1?"":","); continue; }
+      }
+    }
+    fprintf(fp,"}%s\n",i==RN-1?"":",");
+  }
+  fprintf(fp,"};\n\n");
+
+  fprintf(fp,"static int RC[%d]={",RN);
+  for(i=0;i<RN;i++) fprintf(fp,"%d%s",RA[i].rhsi,i==RN-1?"":",");
+  fprintf(fp,"};\n");
+
+  fprintf(fp,"typedef struct { char v; int n; } pn;\n");
+  fprintf(fp,"static int *S,*R;\n");
+  fprintf(fp,"static pn *V;\n");
+  fprintf(fp,"static int si=-1,ri=-1,vi=-1;\n\n");
+
+  for(i=0;i<RN;i++) fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
+  fprintf(fp,"\nstatic void (*F[%d])()={",RN);
+  for(i=0;i<RN;i++) fprintf(fp,"%sr%03d",b++?",":"",i);
+  fprintf(fp,"};\n");
+
+  fprintf(fp,"\n"
+"static int t[1024],ti,tc;\n"
+"static int v[1024];\n"
+"\n"
+"void pgreset() {\n"
+"  ti=0;tc=0;si=-1;ri=-1;vi=-1;\n"
+"}\n"
+"\n"
+"void pgpush(int tt, int tv) {\n"
+"  t[tc]=tt;\n"
+"  v[tc++]=tv;\n"
+"}\n"
+"\n"
+"void pgparse() {\n"
+"  int i,j,k=-1,r;\n"
+"  if(tc==1) return;\n"
+"  S=malloc(sizeof(int)*1024);\n"
+"  R=malloc(sizeof(int)*1024);\n"
+"  V=malloc(sizeof(pn)*1024);\n"
+"  S[++si]=%s;\n"
+"  S[++si]=%s;\n"
+"  for(i=0;;i++) {\n"
+"    if(S[si]==t[ti]) {\n"
+"      V[++vi].n=v[ti];\n"
+"      --si; ++ti;\n"
+"      while(S[si]==-2) { (*F[R[ri--]])(); --si; }\n"
+"      if(si<0) { --vi; break; }\n"
+"    }\n"
+"    else {\n"
+"      r=LL[S[si--]][t[ti]];\n"
+"      if(r==-1) { printf(\"parse\\n\"); break; }\n"
+"      R[++ri]=r;\n"
+"      S[++si]=-2; /* reduction marker */\n"
+"      if(!RC[r]) V[++vi].n=0; /* empty */\n"
+"      for(j=RC[r]-1;j>=0;j--)\n"
+"        S[++si]=RT[r][j];\n"
+"      while(S[si]==-2) { (*F[R[ri--]])(); --si; }\n"
+"    }\n"
+"  }\n"
+"}\n",tend,taccept);
+
+  fclose(fp);
 }

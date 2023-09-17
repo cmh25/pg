@@ -30,6 +30,8 @@ void pgh();
 void pgc();
 void pgeunitr();
 void pglalr();
-void pgbuildll1(int m);
+void pgbuildll(int m);
+void pghll();
+void pgcll();
 
 #endif /* PG_H */

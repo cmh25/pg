@@ -117,7 +117,7 @@ static char* gn(char *p) {
   *p=c;
 }
 
-static void lex(char *p) {
+static int lex(char *p) {
   int s;
   while(1) {
     if(!*p) break;
@@ -132,15 +132,16 @@ static void lex(char *p) {
     else if(*p==')') { ++p; push(T009,0); }
     else if(*p=='\n') { push(T015,0); break; }
     else if(*p=='\\'&&*(p+1)=='\\') exit(0);
-    else { printf("lex\n"); break; }
+    else { printf("lex\n"); return 0; }
   }
+  return 1;
 }
 
 void pgparse(char *p) {
   int i,j,r;
   ti=0;tc=0;si=-1;ri=-1;vi=-1;
   memset(V,0,sizeof(V));
-  lex(p);
+  if(!lex(p)) return;
   if(tc==1) return;
   S[++si]=T015; /* $e */
   S[++si]=T000; /* $a */

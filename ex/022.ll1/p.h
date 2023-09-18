@@ -11,8 +11,6 @@
 #define T007   7 /* ) */
 #define T008   8 /* $e */
 
-void pgreset();
-void pgpush(int tt, int tv);
-void pgparse();
+void pgparse(char *p);
 
 #endif /* P_H */

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 /*
 e > t tz
@@ -101,27 +102,52 @@ static void (*F[13])()={r000,r001,r002,r003,r004,r005,r006,r007,r008,r009,r010,r
 static int t[1024],ti,tc;
 static int v[1024];
 
-void pgreset() {
-  ti=0;tc=0;si=-1;ri=-1;vi=-1;
-  memset(V,0,sizeof(V));
-}
-
-void pgpush(int tt, int tv) {
+static void push(int tt, int tv) {
   t[tc]=tt;
   v[tc++]=tv;
 }
 
-void pgparse() {
+static char* gn(char *p) {
+  char c,*s=p;
+  if(*p=='-')p++;
+  while(*p&&isdigit(*p++));
+  c=*--p;
+  *p=0;
+  push(T010,atoi(s));
+  *p=c;
+}
+
+static void lex(char *p) {
+  int s;
+  while(1) {
+    if(!*p) break;
+    s=*p==' ';
+    while(*p==' ') p++;
+    if(isdigit(*p)||(s&&*p=='-'&&isdigit(p[1]))) p=gn(p);
+    else if(*p=='+') { ++p; push(T011,0); }
+    else if(*p=='-') { ++p; push(T012,0); }
+    else if(*p=='*') { ++p; push(T013,0); }
+    else if(*p=='/') { ++p; push(T014,0); }
+    else if(*p=='(') { ++p; push(T008,0); }
+    else if(*p==')') { ++p; push(T009,0); }
+    else if(*p=='\n') { push(T015,0); break; }
+    else if(*p=='\\'&&*(p+1)=='\\') exit(0);
+    else { printf("lex\n"); break; }
+  }
+}
+
+void pgparse(char *p) {
   int i,j,r;
+  ti=0;tc=0;si=-1;ri=-1;vi=-1;
+  memset(V,0,sizeof(V));
+  lex(p);
   if(tc==1) return;
   S[++si]=T015; /* $e */
   S[++si]=T000; /* $a */
   for(i=0;;i++) {
     if(S[si]==t[ti]) {
-      V[++vi].n=v[ti];
-      --si; ++ti;
-      while(S[si]==-2) { (*F[R[ri--]])(); --si; }
-      if(si<0) { --vi; break; }
+      V[++vi].n=v[ti++];
+      --si;
     }
     else {
       r=LL[S[si--]][t[ti]];
@@ -129,9 +155,9 @@ void pgparse() {
       R[++ri]=r;
       S[++si]=-2; /* reduction marker */
       if(!RC[r]) V[++vi].n=0; /* empty */
-      for(j=RC[r]-1;j>=0;j--)
-        S[++si]=RT[r][j];
-      while(S[si]==-2) { (*F[R[ri--]])(); --si; }
+      for(j=RC[r]-1;j>=0;j--) S[++si]=RT[r][j];
     }
+    while(S[si]==-2) { (*F[R[ri--]])(); --si; }
+    if(si<0) { --vi; break; }
   }
 }

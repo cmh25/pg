@@ -1264,8 +1264,6 @@ void pghll() {
     if(ta[i]==str("$e")) tend=TL[i];
   }
   fprintf(fp,"\n");
-  fprintf(fp,"void pgreset();\n");
-  fprintf(fp,"void pgpush(int tt, int tv);\n");
   fprintf(fp,"void pgparse();\n");
   fprintf(fp,"\n#endif /* P_H */\n");
   fclose(fp);
@@ -1281,6 +1279,7 @@ void pgcll() {
   fprintf(fp,"#include <stdio.h>\n");
   fprintf(fp,"#include <stdlib.h>\n");
   fprintf(fp,"#include <string.h>\n\n");
+  fprintf(fp,"#include <ctype.h>\n\n");
 
   fprintf(fp,"/*\n%s*/\n\n",arules);
 
@@ -1331,27 +1330,32 @@ void pgcll() {
 "static int t[1024],ti,tc;\n"
 "static int v[1024];\n"
 "\n"
-"void pgreset() {\n"
-"  ti=0;tc=0;si=-1;ri=-1;vi=-1;\n"
-"  memset(V,0,sizeof(V));\n"
-"}\n"
-"\n"
-"void pgpush(int tt, int tv) {\n"
+"static void push(int tt, int tv) {\n"
 "  t[tc]=tt;\n"
 "  v[tc++]=tv;\n"
 "}\n"
+"static void lex(char *p) {\n"
+"  while(1) {\n"
+"    if(!*p) break;\n"
+"    while(*p==' ') ++p;\n"
+"    if(*p=='\\\\'&&*(p+1)=='\\\\') exit(0);\n"
+"    else if(*p=='\\n') break;\n"
+"    else { printf(\"lex\\n\"); break; }\n"
+"  }\n"
+"}\n"
 "\n"
-"void pgparse() {\n"
+"void pgparse(char *p) {\n"
 "  int i,j,r;\n"
-"  if(tc==1) return;\n"
+"  ti=0;tc=0;si=-1;ri=-1;vi=-1;\n"
+"  memset(V,0,sizeof(V));\n"
+"  lex(p);\n"
+"  if(tc<1) return;\n"
 "  S[++si]=%s; /* $e */\n"
 "  S[++si]=%s; /* $a */\n"
 "  for(i=0;;i++) {\n"
 "    if(S[si]==t[ti]) {\n"
-"      V[++vi].n=v[ti];\n"
-"      --si; ++ti;\n"
-"      while(S[si]==-2) { (*F[R[ri--]])(); --si; }\n"
-"      if(si<0) { --vi; break; }\n"
+"      V[++vi].n=v[ti++];\n"
+"      --si;\n"
 "    }\n"
 "    else {\n"
 "      r=LL[S[si--]][t[ti]];\n"
@@ -1359,11 +1363,28 @@ void pgcll() {
 "      R[++ri]=r;\n"
 "      S[++si]=-2; /* reduction marker */\n"
 "      if(!RC[r]) V[++vi].n=0; /* empty */\n"
-"      for(j=RC[r]-1;j>=0;j--)\n"
-"        S[++si]=RT[r][j];\n"
-"      while(S[si]==-2) { (*F[R[ri--]])(); --si; }\n"
+"      for(j=RC[r]-1;j>=0;j--) S[++si]=RT[r][j];\n"
 "    }\n"
+"    while(S[si]==-2) { (*F[R[ri--]])(); --si; }\n"
+"    if(si<0) { --vi; break; }\n"
 "  }\n"
+"}\n"
+"\n"
+"int main() {\n"
+"  int c;\n"
+"  size_t i,m=2;\n"
+"  char *b=malloc(m);\n"
+"  printf(\"  \");\n"
+"  for(i=0;;i=0) {\n"
+"    while((c=fgetc(stdin))&&c!='\\n') {\n"
+"      b[i++]=c;\n"
+"      if(i==m) { m<<=1; b=realloc(b,m+2); }\n"
+"    }\n"
+"    b[i++]='\\n'; b[i]=0;\n"
+"    pgparse(b);\n"
+"    printf(\"  \");\n"
+"  }\n"
+"  return 0;\n"
 "}\n",tend,taccept);
 
   fclose(fp);

@@ -1207,7 +1207,7 @@ void pgbuildll(int m) {
       for(k=0;k<TC;k++) if(F[j]==T[k]) break;
       for(p=0;p<NTC;p++) if(rp->lhs==NT[p]) break;
       if(LL[p][k]!=-1) {
-        printf("warning: first/first\n");
+        printf("warning: first/first conflict\n");
         printf("         %d. ",LL[p][k]); printmp(LL[p][k],-1,0,0); printf("\n");
         printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
         conflicts++;
@@ -1221,7 +1221,7 @@ void pgbuildll(int m) {
       for(k=0;k<TC;k++) if(AV[n][j]==T[k]) break;
       for(p=0;p<NTC;p++) if(rp->lhs==NT[p]) break;
       if(LL[p][k]!=-1) {
-        printf("warning: first/follow\n");
+        printf("warning: first/follow conflict\n");
         printf("         %d. ",LL[p][k]); printmp(LL[p][k],-1,0,0); printf("\n");
         printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
         conflicts++;
@@ -1264,7 +1264,7 @@ void pghll() {
     if(ta[i]==str("$e")) tend=TL[i];
   }
   fprintf(fp,"\n");
-  fprintf(fp,"void pgparse();\n");
+  fprintf(fp,"void pgparse(char *p);\n");
   fprintf(fp,"\n#endif /* P_H */\n");
   fclose(fp);
 }
@@ -1283,7 +1283,7 @@ void pgcll() {
 
   fprintf(fp,"/*\n%s*/\n\n",arules);
 
-  fprintf(fp,"static int LL[%d][%d]={\n",TC,NTC+TC);
+  fprintf(fp,"static int LL[%d][%d]={\n",NTC,NTC+TC);
   for(i=0;i<NTC;i++) {
     fprintf(fp,"{");
     for(j=0;j<NTC;j++) fprintf(fp,"-1,");

@@ -115,6 +115,7 @@ static char* gn(char *p) {
   *p=0;
   push(T010,atoi(s));
   *p=c;
+  return p;
 }
 
 static int lex(char *p) {

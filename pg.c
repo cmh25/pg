@@ -1346,7 +1346,7 @@ void pgcll() {
 "void pgparse(char *p) {\n"
 "  int i,j,r;\n"
 "  ti=0;tc=0;si=-1;ri=-1;vi=-1;\n"
-"  memset(V,1024,sizeof(pn));\n"
+"  memset(V,0,sizeof(V));\n"
 "  if(!lex(p)) return;\n"
 "  if(tc<1) return;\n"
 "  S[++si]=%s; /* $e */\n"

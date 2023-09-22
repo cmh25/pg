@@ -141,7 +141,7 @@ static int lex(char *p) {
 void pgparse(char *p) {
   int i,j,r;
   ti=0;tc=0;si=-1;ri=-1;vi=-1;
-  memset(V,1024,sizeof(pn));
+  memset(V,0,sizeof(V));
   if(!lex(p)) return;
   if(tc==1) return;
   S[++si]=T015; /* $e */

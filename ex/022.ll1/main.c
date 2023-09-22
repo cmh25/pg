@@ -5,7 +5,7 @@
 int main() {
   int c;
   size_t i,m=2;
-  char *b=malloc(m);
+  char *b=malloc(m+2);
   printf("  ");
   for(i=0;;i=0) {
     while((c=fgetc(stdin))&&c!='\n') {

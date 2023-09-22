@@ -12,7 +12,7 @@ o > N
 o > ( e )
 */
 
-static int LL[5][9]={
+static int LL[4][9]={
 {-1,-1,-1,-1,-1,0,0,-1,-1},
 {-1,-1,-1,-1,-1,1,1,-1,-1},
 {-1,-1,-1,-1,3,-1,-1,2,2},
@@ -99,7 +99,7 @@ static int lex(char *p) {
 void pgparse(char *p) {
   int i,j,r;
   ti=0;tc=0;si=-1;ri=-1;vi=-1;
-  memset(V,0,sizeof(V));
+  memset(V,1024,sizeof(pn));
   if(!lex(p)) return;
   if(tc==1) return;
   S[++si]=T008; /* $e */

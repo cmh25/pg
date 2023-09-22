@@ -449,10 +449,8 @@ static void goto1(int s, char *p) {
     rp=&RA[R[i]];
     rs=rp->rhs[M[i]];
     if(rp->rhsi==M[i]) { /* default reduce rule */
-      for(j=0;j<CN[i];j++) { /* for any lookahead */
-        k=firsti(C[i][j]);
-        for(m=0;m<FC[k];m++) addtrans(s,FV[k][m],0,0,R[i],M[i]);
-      }
+      for(j=0;j<CN[i];j++) /* for any lookahead */
+        addtrans(s,C[i][j],0,0,R[i],M[i]);
     }
     else if(p==rs) {
       if(pins(SN,R[i],M[i]+1,C[i],CN[i])) continue;
@@ -1278,7 +1276,7 @@ void pgcll() {
   fprintf(fp,"#include \"p.h\"\n");
   fprintf(fp,"#include <stdio.h>\n");
   fprintf(fp,"#include <stdlib.h>\n");
-  fprintf(fp,"#include <string.h>\n\n");
+  fprintf(fp,"#include <string.h>\n");
   fprintf(fp,"#include <ctype.h>\n\n");
 
   fprintf(fp,"/*\n%s*/\n\n",arules);
@@ -1348,7 +1346,7 @@ void pgcll() {
 "void pgparse(char *p) {\n"
 "  int i,j,r;\n"
 "  ti=0;tc=0;si=-1;ri=-1;vi=-1;\n"
-"  memset(V,0,sizeof(V));\n"
+"  memset(V,1024,sizeof(pn));\n"
 "  if(!lex(p)) return;\n"
 "  if(tc<1) return;\n"
 "  S[++si]=%s; /* $e */\n"
@@ -1374,7 +1372,7 @@ void pgcll() {
 "int main() {\n"
 "  int c;\n"
 "  size_t i,m=2;\n"
-"  char *b=malloc(m);\n"
+"  char *b=malloc(m+2);\n"
 "  printf(\"  \");\n"
 "  for(i=0;;i=0) {\n"
 "    while((c=fgetc(stdin))&&c!='\\n') {\n"

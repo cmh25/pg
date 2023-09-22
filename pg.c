@@ -1360,7 +1360,6 @@ void pgcll() {
 "      if(r==-1) { printf(\"parse\\n\"); break; }\n"
 "      R[++ri]=r;\n"
 "      S[++si]=-2; /* reduction marker */\n"
-"      if(!RC[r]) V[++vi].n=0; /* empty */\n"
 "      for(j=RC[r]-1;j>=0;j--) S[++si]=RT[r][j];\n"
 "    }\n"
 "    while(S[si]==-2) { (*F[R[ri--]])(); --si; }\n"

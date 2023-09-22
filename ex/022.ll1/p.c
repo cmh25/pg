@@ -45,6 +45,7 @@ static void r001() { /* e > o ez */
   else if(b.v=='/') V[vi].n/=b.n;
 }
 static void r002() { /* ez > */
+  V[++vi].n=0;
 }
 static void r003() { /* ez > V e */
   pn b;
@@ -113,7 +114,6 @@ void pgparse(char *p) {
       if(r==-1) { printf("parse\n"); break; }
       R[++ri]=r;
       S[++si]=-2; /* reduction marker */
-      if(!RC[r]) V[++vi].n=0; /* empty */
       for(j=RC[r]-1;j>=0;j--) S[++si]=RT[r][j];
     }
     while(S[si]==-2) { (*F[R[ri--]])(); --si; }

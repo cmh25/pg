@@ -61,6 +61,7 @@ static void r002() { /* t > f fz */
   if(b.v=='/') V[vi].n/=b.n;
 }
 static void r003() { /* tz > */
+  V[++vi].n=0;
 }
 static void r004() { /* tz > a t tz */
   pn c=V[vi--];
@@ -76,6 +77,7 @@ static void r005() { /* f > ( e ) */
 static void r006() { /* f > N */
 }
 static void r007() { /* fz > */
+  V[++vi].n=0;
 }
 static void r008() { /* fz > m f fz */
   pn c=V[vi--];
@@ -155,7 +157,6 @@ void pgparse(char *p) {
       if(r==-1) { printf("parse\n"); break; }
       R[++ri]=r;
       S[++si]=-2; /* reduction marker */
-      if(!RC[r]) V[++vi].n=0; /* empty */
       for(j=RC[r]-1;j>=0;j--) S[++si]=RT[r][j];
     }
     while(S[si]==-2) { (*F[R[ri--]])(); --si; }

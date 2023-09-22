@@ -1349,7 +1349,6 @@ void pgcll() {
 "  memset(V,0,sizeof(V));\n"
 "  if(!lex(p)) return;\n"
 "  if(tc<1) return;\n"
-"  S[++si]=%s; /* $e */\n"
 "  S[++si]=%s; /* $a */\n"
 "  for(i=0;;i++) {\n"
 "    if(S[si]==t[ti]) {\n"

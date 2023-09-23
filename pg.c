@@ -792,12 +792,8 @@ void pgh() {
     fprintf(fp,"#define T%03d %3d /* %s */\n",k,k,ta[i]);
   }
   fprintf(fp,"\n");
-  fprintf(fp,"extern int *pgta; /* tokens */\n");
-  fprintf(fp,"extern int *pgva; /* values */\n");
-  fprintf(fp,"extern int pgi;   /* tv index */\n");
-  fprintf(fp,"void pgpush(int t, int v);\n");
-  fprintf(fp,"void parse();\n");
-  fprintf(fp,"\n#endif /* P_H */\n");
+  fprintf(fp,"void pgparse(char *p);\n\n");
+  fprintf(fp,"#endif /* P_H */\n");
   fclose(fp);
 }
 
@@ -814,7 +810,10 @@ void pgc() {
   if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
   fprintf(fp,"#include \"p.h\"\n");
   fprintf(fp,"#include <stdio.h>\n");
-  fprintf(fp,"#include <stdlib.h>\n\n");
+  fprintf(fp,"#include <stdlib.h>\n");
+  fprintf(fp,"#include <ctype.h>\n\n");
+
+  fprintf(fp,"/*\n%s*/\n\n",arules);
 
   j=TC+NTC+LFN;
   for(k=0;k<LFN;k++) if(isnt(LF[k])) --j;
@@ -879,7 +878,7 @@ void pgc() {
   fprintf(fp,"};\n");
 
   fprintf(fp,"\n"
-"void pgpush(int t, int v) {\n"
+"static void push(int t, int v) {\n"
 "  static size_t m=256;\n"
 "  if(!pgta) pgta=(int*)malloc(m*sizeof(int));\n"
 "  if(!pgva) pgva=(int*)malloc(m*sizeof(int));\n"
@@ -892,12 +891,25 @@ void pgc() {
 "  pgva[pgi++]=v;\n"
 "}\n"
 "\n"
-"void parse() {\n"
+"static int lex(char *p) {\n"
+"  while(1) {\n"
+"    while(*p==' ') ++p;\n"
+"    if(!*p) break;\n"
+"    if(*p=='\\\\'&&*(p+1)=='\\\\') exit(0);\n"
+"    else if(*p=='\\n') break;\n"
+"    else { printf(\"lex\\n\"); return 0; }\n"
+"  }\n"
+"  return 1;\n"
+"}\n"
+"\n"
+"void pgparse(char *p) {\n"
 "  int i=0,j,r;\n"
 "  static int *ss=0,*st=0;\n"
 "  static size_t sm=2;\n"
 "  size_t si=0;\n"
-"  vi=-1;\n"
+"  vi=-1; pgi=0;\n"
+"  lex(p);\n"
+"  if(pgi==1) return;\n"
 "  if(!vv) vv=(int*)malloc(vm*sizeof(int));\n"
 "  if(!ss) ss=(int*)malloc(sm*sizeof(int));\n"
 "  if(!st) st=(int*)malloc(sm*sizeof(int));\n"
@@ -926,6 +938,23 @@ void pgc() {
 "      st[si]=LEFT[r];\n"
 "    }\n"
 "  }\n"
+"}\n"
+"\n"
+"int main() {\n"
+"  int c;\n"
+"  size_t i,m=2;\n"
+"  char *b=malloc(m+2);\n"
+"  printf(\"  \");\n"
+"  for(i=0;;i=0) {\n"
+"    while((c=fgetc(stdin))&&c!='\\n') {\n"
+"      b[i++]=c;\n"
+"      if(i==m) { m<<=1; b=realloc(b,m+2); }\n"
+"    }\n"
+"    b[i++]='\\n'; b[i]=0;\n"
+"    pgparse(b);\n"
+"    printf(\"  \");\n"
+"  }\n"
+"  return 0;\n"
 "}\n");
 
   fclose(fp);
@@ -1382,7 +1411,7 @@ void pgcll() {
 "    printf(\"  \");\n"
 "  }\n"
 "  return 0;\n"
-"}\n",tend,taccept);
+"}\n",taccept);
 
   fclose(fp);
 }

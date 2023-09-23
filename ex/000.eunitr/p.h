@@ -9,10 +9,6 @@
 #define T005   5 /* $e */
 #define T006   6 /* $a */
 
-extern int *pgta; /* tokens */
-extern int *pgva; /* values */
-extern int pgi;   /* tv index */
-void pgpush(int t, int v);
-void parse();
+void pgparse(char *p);
 
 #endif /* P_H */

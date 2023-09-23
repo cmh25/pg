@@ -1,6 +1,17 @@
 #include "p.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
+
+/*
+# dragon book example
+e > e '+' t
+e > t
+t > t '*' f
+t > f
+f > '(' e ')'
+f > n
+*/
 
 static int SR[14][11]={
 {-1,-1,3,-1,4,-1,-1,-1,-1,-1,-1},
@@ -57,7 +68,7 @@ static void r005() { /* f > '(' e ')' */
 
 static void (*R[7])()={r000,r001,0,r003,0,r005,0};
 
-void pgpush(int t, int v) {
+static void push(int t, int v) {
   static size_t m=256;
   if(!pgta) pgta=(int*)malloc(m*sizeof(int));
   if(!pgva) pgva=(int*)malloc(m*sizeof(int));
@@ -70,12 +81,40 @@ void pgpush(int t, int v) {
   pgva[pgi++]=v;
 }
 
-void parse() {
+static char* gn(char *p) {
+  char c,*s=p;
+  if(*p=='-')p++;
+  while(*p&&isdigit(*p++));
+  c=*--p; *p=0;
+  push(T004,atoi(s));
+  *p=c;
+  return p;
+}
+
+static int lex(char *p) {
+  while(1) {
+    while(*p==' ') ++p;
+    if(!*p) break;
+    if(isdigit(*p)||(*p=='-'&&isdigit(p[1]))) p=gn(p);
+    else if(*p=='+') { ++p; push(T000,0); }
+    else if(*p=='*') { ++p; push(T001,0); }
+    else if(*p=='(') { ++p; push(T002,0); }
+    else if(*p==')') { ++p; push(T003,0); }
+    else if(*p=='\n') { push(T005,0); break; }
+    else if(*p=='\\'&&*(p+1)=='\\') exit(0);
+    else { printf("lex\n"); break; }
+  }
+  return 1;
+}
+
+void pgparse(char *p) {
   int i=0,j,r;
   static int *ss=0,*st=0;
   static size_t sm=2;
   size_t si=0;
-  vi=-1;
+  vi=-1; pgi=0;
+  lex(p);
+  if(pgi==1) return;
   if(!vv) vv=(int*)malloc(vm*sizeof(int));
   if(!ss) ss=(int*)malloc(sm*sizeof(int));
   if(!st) st=(int*)malloc(sm*sizeof(int));

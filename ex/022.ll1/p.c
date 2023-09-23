@@ -100,8 +100,7 @@ void pgparse(char *p) {
   int i,j,r;
   ti=0;tc=0;si=-1;ri=-1;vi=-1;
   memset(V,0,sizeof(V));
-  if(!lex(p)) return;
-  if(tc==1) return;
+  if(!lex(p)||tc==1) return;
   S[++si]=T000; /* $a */
   for(i=0;;i++) {
     if(S[si]==t[ti]) {

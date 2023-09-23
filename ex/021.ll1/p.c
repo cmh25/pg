@@ -155,7 +155,7 @@ void pgparse(char *p) {
       S[++si]=-2; /* reduction marker */
       for(j=RC[r]-1;j>=0;j--) S[++si]=RT[r][j];
     }
-    while(S[si]==-2) { (*F[R[ri--]])(); --si; }
+    while(si>=0&&S[si]==-2) { (*F[R[ri--]])(); --si; }
     if(si<0) { --vi; break; }
   }
 }

@@ -1391,7 +1391,7 @@ void pgcll() {
 "      S[++si]=-2; /* reduction marker */\n"
 "      for(j=RC[r]-1;j>=0;j--) S[++si]=RT[r][j];\n"
 "    }\n"
-"    while(S[si]==-2) { (*F[R[ri--]])(); --si; }\n"
+"    while(si>=0&&S[si]==-2) { (*F[R[ri--]])(); --si; }\n"
 "    if(si<0) { --vi; break; }\n"
 "  }\n"
 "}\n"

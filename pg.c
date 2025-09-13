@@ -75,9 +75,13 @@ static void cs(char *s) {
 }
 
 static char* xfgets(char *s, int n, FILE *f) {
-  char *r = fgets(s,n,f);
-  s[strlen(s)-1]=0;
-  cs(s);
+  char *r = fgets(s, n, f);
+  if(r) {
+    size_t len = strlen(s);
+    if(len > 0 && (s[len-1] == '\n' || s[len-1] == '\r')) s[--len]=0;
+    if(len > 0 && s[len-1] == '\r') s[--len]=0;
+    cs(s);
+  }
   return r;
 }
 
@@ -228,6 +232,7 @@ static void followgen() {
           /* add follow(A) to follow(B) */
           n=followi(RA[j].lhs);
           m=followi(p);
+          if(n<0) continue;
           for(s=0;s<AC[n];s++)
             if(!infollow(p,AV[n][s])) { AV[m][AC[m]++]=AV[n][s]; f=1; }
         }
@@ -249,7 +254,7 @@ static void propagatectx(int s, int r, int m) {
   int i,j,k,u=0;
   char *n=RA[r].rhs[m];
   for(i=0;i<N;i++) {
-    if(S[i]!=s|R[i]!=r||M[i]!=m) continue;
+    if(S[i]!=s||R[i]!=r||M[i]!=m) continue;
     for(j=i+1;j<N;j++) {
       if(S[j]!=s) continue;
       if(n==RA[R[j]].lhs) {
@@ -280,7 +285,7 @@ static void add2state1(int s, int r, int m, char **c, int cn) {
       for(k=0;k<CN[i];k++) if(C[i][k]==c[j]) break;
       if(k==CN[i]) { C[i][CN[i]++]=c[j]; u=1; }
     }
-    if(u) { propagatectx(s,r,m); u=0; }
+    if(u) { propagatectx(s,r,m); }
     return;
   }
   S[N]=s;
@@ -312,8 +317,8 @@ static void closure0(int s) {
 }
 
 static void closure1(int s) {
-  int i,j,k,c,p,b;
-  rule *r0,*r1;
+  int i,j,k,b;
+  rule *r0;
   char *ctx[32],*n;
   int ctn=0;
   for(i=0;i<N;i++,ctn=0) {
@@ -350,13 +355,12 @@ static char* escape(char *s) {
 }
 
 static void printmp(int r, int m, char **c, int cn) {
-  int i,j,k;
-  char *u[32];
+  int i,j;
   rule *rp=&RA[r];
   printf("%s %s",rp->lhs,rp->op);
-  for(k=0;k<rp->rhsi;k++) {
-    if(k==m) printf(" .");
-    printf(" %s",escape(rp->rhs[k]));
+  for(j=0;j<rp->rhsi;j++) {
+    if(j==m) printf(" .");
+    printf(" %s",escape(rp->rhs[j]));
   }
   if(m==rp->rhsi) printf(" .");
   if(gmode==LR1||gmode==LALR) {
@@ -385,7 +389,7 @@ static void addtrans(int s, char *t, int a, int g, int r, int m) {
     }
     else if(a==1&&TA[i]==0) ; /* overwrite default reduce follow() entries */
     else if(a==1&&TA[i]==1) return; /* just leave first shift rule. TODO?*/
-    else ; /* a==2 */
+    else { /* a==2 */ }
     TA[i]=a;
     TG[i]=g;
     TR[i]=r;
@@ -439,7 +443,7 @@ static void goto0(int s, char *p) {
 }
 
 static void goto1(int s, char *p) {
-  int i,j,k,f=0,b,c=0,m;
+  int i,j,f=0,b,c=0;
   char *rs,*nta[128];
   rule *rp;
   GN=N; /* in case this state is not added */
@@ -732,7 +736,7 @@ void pgprintt2() {
   v=malloc(sizeof(void*)*cn);
   t=(int*)malloc(sizeof(int)*cn);
   s=(int*)malloc(sizeof(int)*SN);
-  c=(char**)malloc(sizeof(char*)*cn);
+  c=(char**)calloc(1,sizeof(char*)*cn);
   d=(int*)malloc(sizeof(int)*SN);
   for(i=0;i<SN;i++) d[i]=sdeleted(i)?1:0;
   for(i=0;i<SN;i++) s[i]=i;
@@ -1202,7 +1206,7 @@ static void resequence() {
 }
 
 void pglalr() {
-  int i,j,k,f=1;
+  int i,j,k;
   for(i=0;i<SN;i++) {
     for(j=i+1;j<SN;j++) {
       if(cmpcore(i,j)) continue;
@@ -1218,7 +1222,7 @@ void pglalr() {
 
 /* ll(1) */
 static int LL[256][256]; /* column per terminal, row per nonterminal */
-void pgbuildll(int m) {
+void pgbuildll() {
   int i,j,k,n,p,cn,t[256],e;
   rule *rp;
   char *a,*c[256],b[256],*vc[256][256];
@@ -1277,7 +1281,7 @@ void pgbuildll(int m) {
 
 static char *tend,*taccept;
 void pghll() {
-  int i,j,k,n=0;
+  int i,n=0;
   FILE *fp;
   char *ta[1024];
   if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
@@ -1297,7 +1301,7 @@ void pghll() {
 }
 
 void pgcll() {
-  int i,j,k,*t,n,b=0,m;
+  int i,j,k,b=0,m;
   FILE *fp;
   rule *rp;
   char *c;

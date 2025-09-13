@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   if(inargv(argc,argv,"lalr")) m=LALR;
   if(inargv(argc,argv,"ll1")) {
     m=LL1;
-    pgbuildll(m);
+    pgbuildll();
     if(inargv(argc,argv,"genhc")) { pghll(); pgcll(); }
   }
   else {

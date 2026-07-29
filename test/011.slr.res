@@ -64,7 +64,6 @@ state token action goto rule
     3 B          2    5    4
     3 b          1    6    6
     4 c          1    9    3
-    5 $e         0    0    4
     5 c          0    0    4
     5 E          2   10    5
     5 A          2    4    3
@@ -73,11 +72,8 @@ state token action goto rule
     6 b          1   11    6
     7 $e         0    0    1
     8 c          1   12    2
-    9 $e         0    0    3
     9 c          0    0    3
-   10 $e         0    0    5
    10 c          0    0    5
-   11 $e         0    0    6
-   11 b          0    0    6
    11 c          0    0    6
+   11 b          0    0    6
    12 $e         0    0    2

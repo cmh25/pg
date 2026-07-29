@@ -22,107 +22,68 @@ t: ';' Q V N '(' ')' '[' ']' $e
 18. elist > elist ';'
 19. plist > '[' elist ']'
 warning: shift/reduce conflict state[4] token[V]
-         6. e > o . V e
-         5. e > o .
-warning: shift/reduce conflict state[4] token[V]
-         6. e > o . V e
-         5. e > o .
-warning: shift/reduce conflict state[4] token[V]
-         6. e > o . V e
-         5. e > o .
-warning: shift/reduce conflict state[4] token[V]
-         6. e > o . V e
-         5. e > o .
+         reduce 5 (e > o)
+         shift 12
 warning: shift/reduce conflict state[4] token[N]
-         9. o > . N
-         5. e > o .
-warning: shift/reduce conflict state[4] token[V]
-         6. e > o . V e
-         5. e > o .
-warning: shift/reduce conflict state[4] token[N]
-         9. o > . N
-         5. e > o .
+         reduce 5 (e > o)
+         shift 14
 warning: shift/reduce conflict state[4] token['(']
-         10. o > . '(' e ')'
-         5. e > o .
-warning: shift/reduce conflict state[4] token[V]
-         6. e > o . V e
-         5. e > o .
-warning: shift/reduce conflict state[4] token[N]
-         9. o > . N
-         5. e > o .
-warning: shift/reduce conflict state[4] token['(']
-         10. o > . '(' e ')'
-         5. e > o .
-warning: shift/reduce conflict state[4] token[V]
-         6. e > o . V e
-         5. e > o .
-warning: shift/reduce conflict state[4] token[N]
-         9. o > . N
-         5. e > o .
-warning: shift/reduce conflict state[4] token['(']
-         10. o > . '(' e ')'
-         5. e > o .
+         reduce 5 (e > o)
+         shift 14
+warning: shift/reduce conflict state[4] token['[']
+         reduce 5 (e > o)
+         shift 14
 warning: reduce/reduce conflict state[15] token[$e]
-         8. e > V plist .
-         12. o > plist .
-warning: reduce/reduce conflict state[15] token[V]
-         8. e > V plist .
-         12. o > plist .
-warning: reduce/reduce conflict state[15] token[N]
-         8. e > V plist .
-         12. o > plist .
-warning: reduce/reduce conflict state[15] token['(']
-         8. e > V plist .
-         12. o > plist .
-warning: reduce/reduce conflict state[15] token['[']
-         8. e > V plist .
-         12. o > plist .
+         reduce 8 (e > V plist)
+         reduce 12 (o > plist)
 warning: reduce/reduce conflict state[15] token[';']
-         8. e > V plist .
-         12. o > plist .
+         reduce 8 (e > V plist)
+         reduce 12 (o > plist)
+warning: reduce/reduce conflict state[15] token[V]
+         reduce 8 (e > V plist)
+         reduce 12 (o > plist)
+warning: reduce/reduce conflict state[15] token[N]
+         reduce 8 (e > V plist)
+         reduce 12 (o > plist)
+warning: reduce/reduce conflict state[15] token['(']
+         reduce 8 (e > V plist)
+         reduce 12 (o > plist)
+warning: reduce/reduce conflict state[15] token['[']
+         reduce 8 (e > V plist)
+         reduce 12 (o > plist)
 warning: reduce/reduce conflict state[15] token[')']
-         8. e > V plist .
-         12. o > plist .
-warning: reduce/reduce conflict state[15] token[$e]
-         8. e > V plist .
-         12. o > plist .
+         reduce 8 (e > V plist)
+         reduce 12 (o > plist)
 warning: reduce/reduce conflict state[15] token[']']
-         8. e > V plist .
-         12. o > plist .
+         reduce 8 (e > V plist)
+         reduce 12 (o > plist)
 warning: shift/reduce conflict state[16] token[')']
-         10. o > '(' e . ')'
-         16. elist > e .
-warning: shift/reduce conflict state[16] token[')']
-         10. o > '(' e . ')'
-         16. elist > e .
-warning: reduce/reduce conflict state[19] token[$e]
-         6. e > o V e .
-         7. e > V e .
-warning: reduce/reduce conflict state[19] token[';']
-         6. e > o V e .
-         7. e > V e .
-warning: reduce/reduce conflict state[19] token[')']
-         6. e > o V e .
-         7. e > V e .
-warning: reduce/reduce conflict state[19] token[$e]
-         6. e > o V e .
-         7. e > V e .
-warning: reduce/reduce conflict state[19] token[V]
-         6. e > o V e .
-         7. e > V e .
-warning: reduce/reduce conflict state[19] token[N]
-         6. e > o V e .
-         7. e > V e .
-warning: reduce/reduce conflict state[19] token['(']
-         6. e > o V e .
-         7. e > V e .
-warning: reduce/reduce conflict state[19] token['[']
-         6. e > o V e .
-         7. e > V e .
-warning: reduce/reduce conflict state[19] token[']']
-         6. e > o V e .
-         7. e > V e .
+         reduce 16 (elist > e)
+         shift 21
+warning: reduce/reduce conflict state[20] token[$e]
+         reduce 6 (e > o V e)
+         reduce 7 (e > V e)
+warning: reduce/reduce conflict state[20] token[';']
+         reduce 6 (e > o V e)
+         reduce 7 (e > V e)
+warning: reduce/reduce conflict state[20] token[')']
+         reduce 6 (e > o V e)
+         reduce 7 (e > V e)
+warning: reduce/reduce conflict state[20] token[V]
+         reduce 6 (e > o V e)
+         reduce 7 (e > V e)
+warning: reduce/reduce conflict state[20] token[N]
+         reduce 6 (e > o V e)
+         reduce 7 (e > V e)
+warning: reduce/reduce conflict state[20] token['(']
+         reduce 6 (e > o V e)
+         reduce 7 (e > V e)
+warning: reduce/reduce conflict state[20] token['[']
+         reduce 6 (e > o V e)
+         reduce 7 (e > V e)
+warning: reduce/reduce conflict state[20] token[']']
+         reduce 6 (e > o V e)
+         reduce 7 (e > V e)
 ---------- state 0 ----------
 $a > . s
 s > .
@@ -253,13 +214,15 @@ plist > '[' elist . ']'
 elist > elist . ';' e
 elist > elist . ';'
 ---------- state 19 ----------
+elist > e .
+---------- state 20 ----------
 e > o V e .
 e > V e .
----------- state 20 ----------
-o > '(' e ')' .
 ---------- state 21 ----------
-list > '(' elist ')' .
+o > '(' e ')' .
 ---------- state 22 ----------
+list > '(' elist ')' .
+---------- state 23 ----------
 elist > elist ';' . e
 elist > elist ';' .
 e > . o
@@ -273,14 +236,14 @@ o > . plist
 o > . o e
 list > . '(' elist ')'
 plist > . '[' elist ']'
----------- state 23 ----------
-plist > '[' elist ']' .
 ---------- state 24 ----------
+plist > '[' elist ']' .
+---------- state 25 ----------
 elist > elist ';' e .
 state token action goto rule
 ----- ----- ------ ---- ----
-    0 s          2    1    0
     0 $e         0    0    1
+    0 s          2    1    0
     0 e          2    2    2
     0 Q          1    3    4
     0 o          2    4    5
@@ -315,18 +278,17 @@ state token action goto rule
     5 '('        1    7   10
     5 list       2    8   11
     6 $e         0    0    9
+    6 ';'        0    0    9
     6 V          0    0    9
     6 N          0    0    9
     6 '('        0    0    9
     6 '['        0    0    9
-    6 ';'        0    0    9
     6 ')'        0    0    9
     6 ']'        0    0    9
-    7 e          2   16   10
-    7 $e         0    0   15
     7 ')'        0    0   15
     7 ';'        0    0   15
     7 ']'        0    0   15
+    7 e          2   16   10
     7 elist      2   17   14
     7 o          2    4    5
     7 V          1    5    7
@@ -336,27 +298,26 @@ state token action goto rule
     7 plist      2    9   12
     7 '['        1   10   19
     8 $e         0    0   11
+    8 ';'        0    0   11
     8 V          0    0   11
     8 N          0    0   11
     8 '('        0    0   11
     8 '['        0    0   11
-    8 ';'        0    0   11
     8 ')'        0    0   11
     8 ']'        0    0   11
     9 $e         0    0   12
+    9 ';'        0    0   12
     9 V          0    0   12
     9 N          0    0   12
     9 '('        0    0   12
     9 '['        0    0   12
-    9 ';'        0    0   12
     9 ')'        0    0   12
     9 ']'        0    0   12
-   10 elist      2   18   19
-   10 $e         0    0   15
    10 ')'        0    0   15
    10 ';'        0    0   15
    10 ']'        0    0   15
-   10 e          2   16   16
+   10 elist      2   18   19
+   10 e          2   19   16
    10 o          2    4    5
    10 V          1    5    7
    10 N          1    6    9
@@ -365,7 +326,7 @@ state token action goto rule
    10 plist      2    9   12
    10 '['        1   10   19
    11 $e         0    0    3
-   12 e          2   19    6
+   12 e          2   20    6
    12 plist      2   15    8
    12 o          2    4    5
    12 V          1    5    7
@@ -374,11 +335,11 @@ state token action goto rule
    12 '('        1    7   10
    12 list       2    8   11
    13 $e         0    0   13
+   13 ';'        0    0   13
    13 V          0    0   13
    13 N          0    0   13
    13 '('        0    0   13
    13 '['        0    0   13
-   13 ';'        0    0   13
    13 ')'        0    0   13
    13 ']'        0    0   13
    14 $e         0    0    7
@@ -397,59 +358,59 @@ state token action goto rule
    15 '('        0    0    8
    15 '['        0    0    8
    15 ']'        0    0    8
-   16 ')'        1   20   10
-   16 $e         0    0   16
+   16 ')'        1   21   10
    16 ';'        0    0   16
    16 ']'        0    0   16
-   17 ')'        1   21   14
-   17 ';'        1   22   17
-   18 ']'        1   23   19
-   18 ';'        1   22   17
-   19 $e         0    0    6
-   19 ';'        0    0    6
-   19 ')'        0    0    6
-   19 V          0    0    6
-   19 N          0    0    6
-   19 '('        0    0    6
-   19 '['        0    0    6
-   19 ']'        0    0    6
-   20 $e         0    0   10
-   20 V          0    0   10
-   20 N          0    0   10
-   20 '('        0    0   10
-   20 '['        0    0   10
-   20 ';'        0    0   10
-   20 ')'        0    0   10
-   20 ']'        0    0   10
-   21 $e         0    0   14
-   21 V          0    0   14
-   21 N          0    0   14
-   21 '('        0    0   14
-   21 '['        0    0   14
-   21 ';'        0    0   14
-   21 ')'        0    0   14
-   21 ']'        0    0   14
-   22 e          2   24   17
-   22 $e         0    0   18
-   22 ')'        0    0   18
-   22 ';'        0    0   18
-   22 ']'        0    0   18
-   22 o          2    4    5
-   22 V          1    5    7
-   22 N          1    6    9
-   22 '('        1    7   10
-   22 list       2    8   11
-   22 plist      2    9   12
-   22 '['        1   10   19
-   23 $e         0    0   19
-   23 ';'        0    0   19
-   23 ')'        0    0   19
-   23 V          0    0   19
-   23 N          0    0   19
-   23 '('        0    0   19
-   23 '['        0    0   19
-   23 ']'        0    0   19
-   24 $e         0    0   17
-   24 ')'        0    0   17
-   24 ';'        0    0   17
-   24 ']'        0    0   17
+   17 ')'        1   22   14
+   17 ';'        1   23   17
+   18 ']'        1   24   19
+   18 ';'        1   23   17
+   19 ')'        0    0   16
+   19 ';'        0    0   16
+   19 ']'        0    0   16
+   20 $e         0    0    6
+   20 ';'        0    0    6
+   20 ')'        0    0    6
+   20 V          0    0    6
+   20 N          0    0    6
+   20 '('        0    0    6
+   20 '['        0    0    6
+   20 ']'        0    0    6
+   21 $e         0    0   10
+   21 ';'        0    0   10
+   21 V          0    0   10
+   21 N          0    0   10
+   21 '('        0    0   10
+   21 '['        0    0   10
+   21 ')'        0    0   10
+   21 ']'        0    0   10
+   22 $e         0    0   14
+   22 ';'        0    0   14
+   22 V          0    0   14
+   22 N          0    0   14
+   22 '('        0    0   14
+   22 '['        0    0   14
+   22 ')'        0    0   14
+   22 ']'        0    0   14
+   23 ')'        0    0   18
+   23 ';'        0    0   18
+   23 ']'        0    0   18
+   23 e          2   25   17
+   23 o          2    4    5
+   23 V          1    5    7
+   23 N          1    6    9
+   23 '('        1    7   10
+   23 list       2    8   11
+   23 plist      2    9   12
+   23 '['        1   10   19
+   24 $e         0    0   19
+   24 ';'        0    0   19
+   24 V          0    0   19
+   24 ')'        0    0   19
+   24 N          0    0   19
+   24 '('        0    0   19
+   24 '['        0    0   19
+   24 ']'        0    0   19
+   25 ')'        0    0   17
+   25 ';'        0    0   17
+   25 ']'        0    0   17

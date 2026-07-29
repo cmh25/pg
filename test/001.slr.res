@@ -1,5 +1,5 @@
 n: $a <Lines> <Statements> <Statement> <Access> <ID List> <Value List> <Constant List> <Integer List> <Expression List> <Print List> <Expression> <And Exp> <Not Exp> <Compare Exp> <Add Exp> <Mult Exp> <Negate Exp> <Power Exp> <Value> <Constant>
-t: Integer NewLine ':' CLOSE '#' DATA DIM ID '(' ')' END FOR '=' TO STEP GOTO GOSUB IF THEN INPUT ',' LET Id NEXT OPEN AS POKE PRINT <Print list> READ RETURN RESTORE RUN STOP SYS WAIT Remark OUPUT ';' OR AND NOT '<>' '><' '>' '>=' '<' '<=' '+' '-' '*' '/' '^' String Real $e
+t: Integer NewLine ':' CLOSE '#' DATA DIM ID '(' ')' END FOR '=' TO STEP GOTO GOSUB IF THEN INPUT ',' LET NEXT OPEN AS POKE PRINT READ RETURN RESTORE RUN STOP SYS WAIT Remark OUTPUT ';' OR AND NOT '<>' '><' '>' '>=' '<' '<=' '+' '-' '*' '/' '^' String Real $e
 -------------------------
  0. $a ::= <Lines>
  1. <Lines> ::= Integer <Statements> NewLine <Lines>
@@ -17,11 +17,11 @@ t: Integer NewLine ':' CLOSE '#' DATA DIM ID '(' ')' END FOR '=' TO STEP GOTO GO
 13. <Statement> ::= IF <Expression> THEN <Statement>
 14. <Statement> ::= INPUT <ID List>
 15. <Statement> ::= INPUT '#' Integer ',' <ID List>
-16. <Statement> ::= LET Id '=' <Expression>
+16. <Statement> ::= LET ID '=' <Expression>
 17. <Statement> ::= NEXT <ID List>
 18. <Statement> ::= OPEN <Value> FOR <Access> AS '#' Integer
 19. <Statement> ::= POKE <Value List>
-20. <Statement> ::= PRINT <Print list>
+20. <Statement> ::= PRINT <Print List>
 21. <Statement> ::= PRINT '#' Integer ',' <Print List>
 22. <Statement> ::= READ <ID List>
 23. <Statement> ::= RETURN
@@ -32,7 +32,7 @@ t: Integer NewLine ':' CLOSE '#' DATA DIM ID '(' ')' END FOR '=' TO STEP GOTO GO
 28. <Statement> ::= WAIT <Value List>
 29. <Statement> ::= Remark
 30. <Access> ::= INPUT
-31. <Access> ::= OUPUT
+31. <Access> ::= OUTPUT
 32. <ID List> ::= ID ',' <ID List>
 33. <ID List> ::= ID
 34. <Value List> ::= <Value> ',' <Value List>
@@ -99,11 +99,11 @@ $a ::= <Lines> .
 <Statement> ::= . IF <Expression> THEN <Statement>
 <Statement> ::= . INPUT <ID List>
 <Statement> ::= . INPUT '#' Integer ',' <ID List>
-<Statement> ::= . LET Id '=' <Expression>
+<Statement> ::= . LET ID '=' <Expression>
 <Statement> ::= . NEXT <ID List>
 <Statement> ::= . OPEN <Value> FOR <Access> AS '#' Integer
 <Statement> ::= . POKE <Value List>
-<Statement> ::= . PRINT <Print list>
+<Statement> ::= . PRINT <Print List>
 <Statement> ::= . PRINT '#' Integer ',' <Print List>
 <Statement> ::= . READ <ID List>
 <Statement> ::= . RETURN
@@ -240,7 +240,7 @@ $a ::= <Lines> .
 <ID List> ::= . ID ',' <ID List>
 <ID List> ::= . ID
 ---------- state 14 ----------
-<Statement> ::= LET . Id '=' <Expression>
+<Statement> ::= LET . ID '=' <Expression>
 ---------- state 15 ----------
 <Statement> ::= NEXT . <ID List>
 <ID List> ::= . ID ',' <ID List>
@@ -266,8 +266,42 @@ $a ::= <Lines> .
 <Constant> ::= . String
 <Constant> ::= . Real
 ---------- state 18 ----------
-<Statement> ::= PRINT . <Print list>
+<Statement> ::= PRINT . <Print List>
 <Statement> ::= PRINT . '#' Integer ',' <Print List>
+<Print List> ::= . <Expression> ';' <Print List>
+<Print List> ::= . <Expression>
+<Print List> ::= .
+<Expression> ::= . <And Exp> OR <Expression>
+<Expression> ::= . <And Exp>
+<And Exp> ::= . <Not Exp> AND <And Exp>
+<And Exp> ::= . <Not Exp>
+<Not Exp> ::= . NOT <Compare Exp>
+<Not Exp> ::= . <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '><' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '>' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '>=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp>
+<Add Exp> ::= . <Mult Exp> '+' <Add Exp>
+<Add Exp> ::= . <Mult Exp> '-' <Add Exp>
+<Add Exp> ::= . <Mult Exp>
+<Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
+<Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
+<Mult Exp> ::= . <Negate Exp>
+<Negate Exp> ::= . '-' <Power Exp>
+<Negate Exp> ::= . <Power Exp>
+<Power Exp> ::= . <Power Exp> '^' <Value>
+<Power Exp> ::= . <Value>
+<Value> ::= . '(' <Expression> ')'
+<Value> ::= . ID
+<Value> ::= . ID '(' <Expression List> ')'
+<Value> ::= . <Constant>
+<Constant> ::= . Integer
+<Constant> ::= . String
+<Constant> ::= . Real
 ---------- state 19 ----------
 <Statement> ::= READ . <ID List>
 <ID List> ::= . ID ',' <ID List>
@@ -322,11 +356,11 @@ $a ::= <Lines> .
 <Statement> ::= . IF <Expression> THEN <Statement>
 <Statement> ::= . INPUT <ID List>
 <Statement> ::= . INPUT '#' Integer ',' <ID List>
-<Statement> ::= . LET Id '=' <Expression>
+<Statement> ::= . LET ID '=' <Expression>
 <Statement> ::= . NEXT <ID List>
 <Statement> ::= . OPEN <Value> FOR <Access> AS '#' Integer
 <Statement> ::= . POKE <Value List>
-<Statement> ::= . PRINT <Print list>
+<Statement> ::= . PRINT <Print List>
 <Statement> ::= . PRINT '#' Integer ',' <Print List>
 <Statement> ::= . READ <ID List>
 <Statement> ::= . RETURN
@@ -474,7 +508,7 @@ $a ::= <Lines> .
 <ID List> ::= ID . ',' <ID List>
 <ID List> ::= ID .
 ---------- state 56 ----------
-<Statement> ::= LET Id . '=' <Expression>
+<Statement> ::= LET ID . '=' <Expression>
 ---------- state 57 ----------
 <Statement> ::= NEXT <ID List> .
 ---------- state 58 ----------
@@ -485,33 +519,36 @@ $a ::= <Lines> .
 <Value List> ::= <Value> . ',' <Value List>
 <Value List> ::= <Value> .
 ---------- state 61 ----------
-<Statement> ::= PRINT <Print list> .
+<Statement> ::= PRINT <Print List> .
 ---------- state 62 ----------
 <Statement> ::= PRINT '#' . Integer ',' <Print List>
 ---------- state 63 ----------
-<Statement> ::= READ <ID List> .
+<Print List> ::= <Expression> . ';' <Print List>
+<Print List> ::= <Expression> .
 ---------- state 64 ----------
-<Statement> ::= SYS <Value> .
+<Statement> ::= READ <ID List> .
 ---------- state 65 ----------
-<Statement> ::= WAIT <Value List> .
+<Statement> ::= SYS <Value> .
 ---------- state 66 ----------
-<Lines> ::= Integer <Statements> NewLine <Lines> .
+<Statement> ::= WAIT <Value List> .
 ---------- state 67 ----------
-<Statements> ::= <Statement> ':' <Statements> .
+<Lines> ::= Integer <Statements> NewLine <Lines> .
 ---------- state 68 ----------
-<Statement> ::= CLOSE '#' Integer .
+<Statements> ::= <Statement> ':' <Statements> .
 ---------- state 69 ----------
+<Statement> ::= CLOSE '#' Integer .
+---------- state 70 ----------
 <Constant List> ::= <Constant> ',' . <Constant List>
 <Constant List> ::= . <Constant> ',' <Constant List>
 <Constant List> ::= . <Constant>
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 70 ----------
+---------- state 71 ----------
 <Statement> ::= DIM ID '(' . <Integer List> ')'
 <Integer List> ::= . Integer ',' <Integer List>
 <Integer List> ::= . Integer
----------- state 71 ----------
+---------- state 72 ----------
 <Statement> ::= FOR ID '=' . <Expression> TO <Expression>
 <Statement> ::= FOR ID '=' . <Expression> TO <Expression> STEP Integer
 <Expression> ::= . <And Exp> OR <Expression>
@@ -545,7 +582,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 72 ----------
+---------- state 73 ----------
 <Expression> ::= <And Exp> OR . <Expression>
 <Expression> ::= . <And Exp> OR <Expression>
 <Expression> ::= . <And Exp>
@@ -578,7 +615,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 73 ----------
+---------- state 74 ----------
 <And Exp> ::= <Not Exp> AND . <And Exp>
 <And Exp> ::= . <Not Exp> AND <And Exp>
 <And Exp> ::= . <Not Exp>
@@ -609,9 +646,9 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 74 ----------
-<Not Exp> ::= NOT <Compare Exp> .
 ---------- state 75 ----------
+<Not Exp> ::= NOT <Compare Exp> .
+---------- state 76 ----------
 <Compare Exp> ::= <Add Exp> '=' . <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
@@ -638,7 +675,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 76 ----------
+---------- state 77 ----------
 <Compare Exp> ::= <Add Exp> '<>' . <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
@@ -665,7 +702,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 77 ----------
+---------- state 78 ----------
 <Compare Exp> ::= <Add Exp> '><' . <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
@@ -692,7 +729,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 78 ----------
+---------- state 79 ----------
 <Compare Exp> ::= <Add Exp> '>' . <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
@@ -719,7 +756,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 79 ----------
+---------- state 80 ----------
 <Compare Exp> ::= <Add Exp> '>=' . <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
@@ -746,7 +783,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 80 ----------
+---------- state 81 ----------
 <Compare Exp> ::= <Add Exp> '<' . <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
@@ -773,7 +810,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 81 ----------
+---------- state 82 ----------
 <Compare Exp> ::= <Add Exp> '<=' . <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
 <Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
@@ -800,7 +837,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 82 ----------
+---------- state 83 ----------
 <Add Exp> ::= <Mult Exp> '+' . <Add Exp>
 <Add Exp> ::= . <Mult Exp> '+' <Add Exp>
 <Add Exp> ::= . <Mult Exp> '-' <Add Exp>
@@ -819,7 +856,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 83 ----------
+---------- state 84 ----------
 <Add Exp> ::= <Mult Exp> '-' . <Add Exp>
 <Add Exp> ::= . <Mult Exp> '+' <Add Exp>
 <Add Exp> ::= . <Mult Exp> '-' <Add Exp>
@@ -838,7 +875,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 84 ----------
+---------- state 85 ----------
 <Mult Exp> ::= <Negate Exp> '*' . <Mult Exp>
 <Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
 <Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
@@ -854,7 +891,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 85 ----------
+---------- state 86 ----------
 <Mult Exp> ::= <Negate Exp> '/' . <Mult Exp>
 <Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
 <Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
@@ -870,10 +907,10 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 86 ----------
+---------- state 87 ----------
 <Negate Exp> ::= '-' <Power Exp> .
 <Power Exp> ::= <Power Exp> . '^' <Value>
----------- state 87 ----------
+---------- state 88 ----------
 <Power Exp> ::= <Power Exp> '^' . <Value>
 <Value> ::= . '(' <Expression> ')'
 <Value> ::= . ID
@@ -882,9 +919,9 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 88 ----------
-<Value> ::= '(' <Expression> . ')'
 ---------- state 89 ----------
+<Value> ::= '(' <Expression> . ')'
+---------- state 90 ----------
 <Value> ::= ID '(' . <Expression List> ')'
 <Expression List> ::= . <Expression> ',' <Expression List>
 <Expression List> ::= . <Expression>
@@ -919,7 +956,7 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 90 ----------
+---------- state 91 ----------
 <Statement> ::= IF <Expression> THEN . <Statement>
 <Statement> ::= . CLOSE '#' Integer
 <Statement> ::= . DATA <Constant List>
@@ -932,11 +969,11 @@ $a ::= <Lines> .
 <Statement> ::= . IF <Expression> THEN <Statement>
 <Statement> ::= . INPUT <ID List>
 <Statement> ::= . INPUT '#' Integer ',' <ID List>
-<Statement> ::= . LET Id '=' <Expression>
+<Statement> ::= . LET ID '=' <Expression>
 <Statement> ::= . NEXT <ID List>
 <Statement> ::= . OPEN <Value> FOR <Access> AS '#' Integer
 <Statement> ::= . POKE <Value List>
-<Statement> ::= . PRINT <Print list>
+<Statement> ::= . PRINT <Print List>
 <Statement> ::= . PRINT '#' Integer ',' <Print List>
 <Statement> ::= . READ <ID List>
 <Statement> ::= . RETURN
@@ -946,14 +983,14 @@ $a ::= <Lines> .
 <Statement> ::= . SYS <Value>
 <Statement> ::= . WAIT <Value List>
 <Statement> ::= . Remark
----------- state 91 ----------
-<Statement> ::= INPUT '#' Integer . ',' <ID List>
 ---------- state 92 ----------
+<Statement> ::= INPUT '#' Integer . ',' <ID List>
+---------- state 93 ----------
 <ID List> ::= ID ',' . <ID List>
 <ID List> ::= . ID ',' <ID List>
 <ID List> ::= . ID
----------- state 93 ----------
-<Statement> ::= LET Id '=' . <Expression>
+---------- state 94 ----------
+<Statement> ::= LET ID '=' . <Expression>
 <Expression> ::= . <And Exp> OR <Expression>
 <Expression> ::= . <And Exp>
 <And Exp> ::= . <Not Exp> AND <And Exp>
@@ -985,11 +1022,11 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 94 ----------
+---------- state 95 ----------
 <Statement> ::= OPEN <Value> FOR . <Access> AS '#' Integer
 <Access> ::= . INPUT
-<Access> ::= . OUPUT
----------- state 95 ----------
+<Access> ::= . OUTPUT
+---------- state 96 ----------
 <Value List> ::= <Value> ',' . <Value List>
 <Value List> ::= . <Value> ',' <Value List>
 <Value List> ::= . <Value>
@@ -1000,203 +1037,9 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 96 ----------
-<Statement> ::= PRINT '#' Integer . ',' <Print List>
 ---------- state 97 ----------
-<Constant List> ::= <Constant> ',' <Constant List> .
+<Statement> ::= PRINT '#' Integer . ',' <Print List>
 ---------- state 98 ----------
-<Statement> ::= DIM ID '(' <Integer List> . ')'
----------- state 99 ----------
-<Integer List> ::= Integer . ',' <Integer List>
-<Integer List> ::= Integer .
----------- state 100 ----------
-<Statement> ::= FOR ID '=' <Expression> . TO <Expression>
-<Statement> ::= FOR ID '=' <Expression> . TO <Expression> STEP Integer
----------- state 101 ----------
-<Expression> ::= <And Exp> OR <Expression> .
----------- state 102 ----------
-<And Exp> ::= <Not Exp> AND <And Exp> .
----------- state 103 ----------
-<Compare Exp> ::= <Add Exp> '=' <Compare Exp> .
----------- state 104 ----------
-<Compare Exp> ::= <Add Exp> '<>' <Compare Exp> .
----------- state 105 ----------
-<Compare Exp> ::= <Add Exp> '><' <Compare Exp> .
----------- state 106 ----------
-<Compare Exp> ::= <Add Exp> '>' <Compare Exp> .
----------- state 107 ----------
-<Compare Exp> ::= <Add Exp> '>=' <Compare Exp> .
----------- state 108 ----------
-<Compare Exp> ::= <Add Exp> '<' <Compare Exp> .
----------- state 109 ----------
-<Compare Exp> ::= <Add Exp> '<=' <Compare Exp> .
----------- state 110 ----------
-<Add Exp> ::= <Mult Exp> '+' <Add Exp> .
----------- state 111 ----------
-<Add Exp> ::= <Mult Exp> '-' <Add Exp> .
----------- state 112 ----------
-<Mult Exp> ::= <Negate Exp> '*' <Mult Exp> .
----------- state 113 ----------
-<Mult Exp> ::= <Negate Exp> '/' <Mult Exp> .
----------- state 114 ----------
-<Power Exp> ::= <Power Exp> '^' <Value> .
----------- state 115 ----------
-<Value> ::= '(' <Expression> ')' .
----------- state 116 ----------
-<Value> ::= ID '(' <Expression List> . ')'
----------- state 117 ----------
-<Expression List> ::= <Expression> . ',' <Expression List>
-<Expression List> ::= <Expression> .
----------- state 118 ----------
-<Statement> ::= IF <Expression> THEN <Statement> .
----------- state 119 ----------
-<Statement> ::= INPUT '#' Integer ',' . <ID List>
-<ID List> ::= . ID ',' <ID List>
-<ID List> ::= . ID
----------- state 120 ----------
-<ID List> ::= ID ',' <ID List> .
----------- state 121 ----------
-<Statement> ::= LET Id '=' <Expression> .
----------- state 122 ----------
-<Statement> ::= OPEN <Value> FOR <Access> . AS '#' Integer
----------- state 123 ----------
-<Access> ::= INPUT .
----------- state 124 ----------
-<Access> ::= OUPUT .
----------- state 125 ----------
-<Value List> ::= <Value> ',' <Value List> .
----------- state 126 ----------
-<Statement> ::= PRINT '#' Integer ',' . <Print List>
-<Print List> ::= . <Expression> ';' <Print List>
-<Print List> ::= . <Expression>
-<Print List> ::= .
-<Expression> ::= . <And Exp> OR <Expression>
-<Expression> ::= . <And Exp>
-<And Exp> ::= . <Not Exp> AND <And Exp>
-<And Exp> ::= . <Not Exp>
-<Not Exp> ::= . NOT <Compare Exp>
-<Not Exp> ::= . <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '><' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '>' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '>=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp>
-<Add Exp> ::= . <Mult Exp> '+' <Add Exp>
-<Add Exp> ::= . <Mult Exp> '-' <Add Exp>
-<Add Exp> ::= . <Mult Exp>
-<Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
-<Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
-<Mult Exp> ::= . <Negate Exp>
-<Negate Exp> ::= . '-' <Power Exp>
-<Negate Exp> ::= . <Power Exp>
-<Power Exp> ::= . <Power Exp> '^' <Value>
-<Power Exp> ::= . <Value>
-<Value> ::= . '(' <Expression> ')'
-<Value> ::= . ID
-<Value> ::= . ID '(' <Expression List> ')'
-<Value> ::= . <Constant>
-<Constant> ::= . Integer
-<Constant> ::= . String
-<Constant> ::= . Real
----------- state 127 ----------
-<Statement> ::= DIM ID '(' <Integer List> ')' .
----------- state 128 ----------
-<Integer List> ::= Integer ',' . <Integer List>
-<Integer List> ::= . Integer ',' <Integer List>
-<Integer List> ::= . Integer
----------- state 129 ----------
-<Statement> ::= FOR ID '=' <Expression> TO . <Expression>
-<Statement> ::= FOR ID '=' <Expression> TO . <Expression> STEP Integer
-<Expression> ::= . <And Exp> OR <Expression>
-<Expression> ::= . <And Exp>
-<And Exp> ::= . <Not Exp> AND <And Exp>
-<And Exp> ::= . <Not Exp>
-<Not Exp> ::= . NOT <Compare Exp>
-<Not Exp> ::= . <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '><' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '>' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '>=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp>
-<Add Exp> ::= . <Mult Exp> '+' <Add Exp>
-<Add Exp> ::= . <Mult Exp> '-' <Add Exp>
-<Add Exp> ::= . <Mult Exp>
-<Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
-<Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
-<Mult Exp> ::= . <Negate Exp>
-<Negate Exp> ::= . '-' <Power Exp>
-<Negate Exp> ::= . <Power Exp>
-<Power Exp> ::= . <Power Exp> '^' <Value>
-<Power Exp> ::= . <Value>
-<Value> ::= . '(' <Expression> ')'
-<Value> ::= . ID
-<Value> ::= . ID '(' <Expression List> ')'
-<Value> ::= . <Constant>
-<Constant> ::= . Integer
-<Constant> ::= . String
-<Constant> ::= . Real
----------- state 130 ----------
-<Value> ::= ID '(' <Expression List> ')' .
----------- state 131 ----------
-<Expression List> ::= <Expression> ',' . <Expression List>
-<Expression List> ::= . <Expression> ',' <Expression List>
-<Expression List> ::= . <Expression>
-<Expression> ::= . <And Exp> OR <Expression>
-<Expression> ::= . <And Exp>
-<And Exp> ::= . <Not Exp> AND <And Exp>
-<And Exp> ::= . <Not Exp>
-<Not Exp> ::= . NOT <Compare Exp>
-<Not Exp> ::= . <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '><' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '>' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '>=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<' <Compare Exp>
-<Compare Exp> ::= . <Add Exp> '<=' <Compare Exp>
-<Compare Exp> ::= . <Add Exp>
-<Add Exp> ::= . <Mult Exp> '+' <Add Exp>
-<Add Exp> ::= . <Mult Exp> '-' <Add Exp>
-<Add Exp> ::= . <Mult Exp>
-<Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
-<Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
-<Mult Exp> ::= . <Negate Exp>
-<Negate Exp> ::= . '-' <Power Exp>
-<Negate Exp> ::= . <Power Exp>
-<Power Exp> ::= . <Power Exp> '^' <Value>
-<Power Exp> ::= . <Value>
-<Value> ::= . '(' <Expression> ')'
-<Value> ::= . ID
-<Value> ::= . ID '(' <Expression List> ')'
-<Value> ::= . <Constant>
-<Constant> ::= . Integer
-<Constant> ::= . String
-<Constant> ::= . Real
----------- state 132 ----------
-<Statement> ::= INPUT '#' Integer ',' <ID List> .
----------- state 133 ----------
-<Statement> ::= OPEN <Value> FOR <Access> AS . '#' Integer
----------- state 134 ----------
-<Statement> ::= PRINT '#' Integer ',' <Print List> .
----------- state 135 ----------
-<Print List> ::= <Expression> . ';' <Print List>
-<Print List> ::= <Expression> .
----------- state 136 ----------
-<Integer List> ::= Integer ',' <Integer List> .
----------- state 137 ----------
-<Statement> ::= FOR ID '=' <Expression> TO <Expression> .
-<Statement> ::= FOR ID '=' <Expression> TO <Expression> . STEP Integer
----------- state 138 ----------
-<Expression List> ::= <Expression> ',' <Expression List> .
----------- state 139 ----------
-<Statement> ::= OPEN <Value> FOR <Access> AS '#' . Integer
----------- state 140 ----------
 <Print List> ::= <Expression> ';' . <Print List>
 <Print List> ::= . <Expression> ';' <Print List>
 <Print List> ::= . <Expression>
@@ -1232,12 +1075,203 @@ $a ::= <Lines> .
 <Constant> ::= . Integer
 <Constant> ::= . String
 <Constant> ::= . Real
----------- state 141 ----------
-<Statement> ::= FOR ID '=' <Expression> TO <Expression> STEP . Integer
----------- state 142 ----------
-<Statement> ::= OPEN <Value> FOR <Access> AS '#' Integer .
----------- state 143 ----------
+---------- state 99 ----------
+<Constant List> ::= <Constant> ',' <Constant List> .
+---------- state 100 ----------
+<Statement> ::= DIM ID '(' <Integer List> . ')'
+---------- state 101 ----------
+<Integer List> ::= Integer . ',' <Integer List>
+<Integer List> ::= Integer .
+---------- state 102 ----------
+<Statement> ::= FOR ID '=' <Expression> . TO <Expression>
+<Statement> ::= FOR ID '=' <Expression> . TO <Expression> STEP Integer
+---------- state 103 ----------
+<Expression> ::= <And Exp> OR <Expression> .
+---------- state 104 ----------
+<And Exp> ::= <Not Exp> AND <And Exp> .
+---------- state 105 ----------
+<Compare Exp> ::= <Add Exp> '=' <Compare Exp> .
+---------- state 106 ----------
+<Compare Exp> ::= <Add Exp> '<>' <Compare Exp> .
+---------- state 107 ----------
+<Compare Exp> ::= <Add Exp> '><' <Compare Exp> .
+---------- state 108 ----------
+<Compare Exp> ::= <Add Exp> '>' <Compare Exp> .
+---------- state 109 ----------
+<Compare Exp> ::= <Add Exp> '>=' <Compare Exp> .
+---------- state 110 ----------
+<Compare Exp> ::= <Add Exp> '<' <Compare Exp> .
+---------- state 111 ----------
+<Compare Exp> ::= <Add Exp> '<=' <Compare Exp> .
+---------- state 112 ----------
+<Add Exp> ::= <Mult Exp> '+' <Add Exp> .
+---------- state 113 ----------
+<Add Exp> ::= <Mult Exp> '-' <Add Exp> .
+---------- state 114 ----------
+<Mult Exp> ::= <Negate Exp> '*' <Mult Exp> .
+---------- state 115 ----------
+<Mult Exp> ::= <Negate Exp> '/' <Mult Exp> .
+---------- state 116 ----------
+<Power Exp> ::= <Power Exp> '^' <Value> .
+---------- state 117 ----------
+<Value> ::= '(' <Expression> ')' .
+---------- state 118 ----------
+<Value> ::= ID '(' <Expression List> . ')'
+---------- state 119 ----------
+<Expression List> ::= <Expression> . ',' <Expression List>
+<Expression List> ::= <Expression> .
+---------- state 120 ----------
+<Statement> ::= IF <Expression> THEN <Statement> .
+---------- state 121 ----------
+<Statement> ::= INPUT '#' Integer ',' . <ID List>
+<ID List> ::= . ID ',' <ID List>
+<ID List> ::= . ID
+---------- state 122 ----------
+<ID List> ::= ID ',' <ID List> .
+---------- state 123 ----------
+<Statement> ::= LET ID '=' <Expression> .
+---------- state 124 ----------
+<Statement> ::= OPEN <Value> FOR <Access> . AS '#' Integer
+---------- state 125 ----------
+<Access> ::= INPUT .
+---------- state 126 ----------
+<Access> ::= OUTPUT .
+---------- state 127 ----------
+<Value List> ::= <Value> ',' <Value List> .
+---------- state 128 ----------
+<Statement> ::= PRINT '#' Integer ',' . <Print List>
+<Print List> ::= . <Expression> ';' <Print List>
+<Print List> ::= . <Expression>
+<Print List> ::= .
+<Expression> ::= . <And Exp> OR <Expression>
+<Expression> ::= . <And Exp>
+<And Exp> ::= . <Not Exp> AND <And Exp>
+<And Exp> ::= . <Not Exp>
+<Not Exp> ::= . NOT <Compare Exp>
+<Not Exp> ::= . <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '><' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '>' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '>=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp>
+<Add Exp> ::= . <Mult Exp> '+' <Add Exp>
+<Add Exp> ::= . <Mult Exp> '-' <Add Exp>
+<Add Exp> ::= . <Mult Exp>
+<Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
+<Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
+<Mult Exp> ::= . <Negate Exp>
+<Negate Exp> ::= . '-' <Power Exp>
+<Negate Exp> ::= . <Power Exp>
+<Power Exp> ::= . <Power Exp> '^' <Value>
+<Power Exp> ::= . <Value>
+<Value> ::= . '(' <Expression> ')'
+<Value> ::= . ID
+<Value> ::= . ID '(' <Expression List> ')'
+<Value> ::= . <Constant>
+<Constant> ::= . Integer
+<Constant> ::= . String
+<Constant> ::= . Real
+---------- state 129 ----------
 <Print List> ::= <Expression> ';' <Print List> .
+---------- state 130 ----------
+<Statement> ::= DIM ID '(' <Integer List> ')' .
+---------- state 131 ----------
+<Integer List> ::= Integer ',' . <Integer List>
+<Integer List> ::= . Integer ',' <Integer List>
+<Integer List> ::= . Integer
+---------- state 132 ----------
+<Statement> ::= FOR ID '=' <Expression> TO . <Expression>
+<Statement> ::= FOR ID '=' <Expression> TO . <Expression> STEP Integer
+<Expression> ::= . <And Exp> OR <Expression>
+<Expression> ::= . <And Exp>
+<And Exp> ::= . <Not Exp> AND <And Exp>
+<And Exp> ::= . <Not Exp>
+<Not Exp> ::= . NOT <Compare Exp>
+<Not Exp> ::= . <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '><' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '>' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '>=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp>
+<Add Exp> ::= . <Mult Exp> '+' <Add Exp>
+<Add Exp> ::= . <Mult Exp> '-' <Add Exp>
+<Add Exp> ::= . <Mult Exp>
+<Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
+<Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
+<Mult Exp> ::= . <Negate Exp>
+<Negate Exp> ::= . '-' <Power Exp>
+<Negate Exp> ::= . <Power Exp>
+<Power Exp> ::= . <Power Exp> '^' <Value>
+<Power Exp> ::= . <Value>
+<Value> ::= . '(' <Expression> ')'
+<Value> ::= . ID
+<Value> ::= . ID '(' <Expression List> ')'
+<Value> ::= . <Constant>
+<Constant> ::= . Integer
+<Constant> ::= . String
+<Constant> ::= . Real
+---------- state 133 ----------
+<Value> ::= ID '(' <Expression List> ')' .
+---------- state 134 ----------
+<Expression List> ::= <Expression> ',' . <Expression List>
+<Expression List> ::= . <Expression> ',' <Expression List>
+<Expression List> ::= . <Expression>
+<Expression> ::= . <And Exp> OR <Expression>
+<Expression> ::= . <And Exp>
+<And Exp> ::= . <Not Exp> AND <And Exp>
+<And Exp> ::= . <Not Exp>
+<Not Exp> ::= . NOT <Compare Exp>
+<Not Exp> ::= . <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<>' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '><' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '>' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '>=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<' <Compare Exp>
+<Compare Exp> ::= . <Add Exp> '<=' <Compare Exp>
+<Compare Exp> ::= . <Add Exp>
+<Add Exp> ::= . <Mult Exp> '+' <Add Exp>
+<Add Exp> ::= . <Mult Exp> '-' <Add Exp>
+<Add Exp> ::= . <Mult Exp>
+<Mult Exp> ::= . <Negate Exp> '*' <Mult Exp>
+<Mult Exp> ::= . <Negate Exp> '/' <Mult Exp>
+<Mult Exp> ::= . <Negate Exp>
+<Negate Exp> ::= . '-' <Power Exp>
+<Negate Exp> ::= . <Power Exp>
+<Power Exp> ::= . <Power Exp> '^' <Value>
+<Power Exp> ::= . <Value>
+<Value> ::= . '(' <Expression> ')'
+<Value> ::= . ID
+<Value> ::= . ID '(' <Expression List> ')'
+<Value> ::= . <Constant>
+<Constant> ::= . Integer
+<Constant> ::= . String
+<Constant> ::= . Real
+---------- state 135 ----------
+<Statement> ::= INPUT '#' Integer ',' <ID List> .
+---------- state 136 ----------
+<Statement> ::= OPEN <Value> FOR <Access> AS . '#' Integer
+---------- state 137 ----------
+<Statement> ::= PRINT '#' Integer ',' <Print List> .
+---------- state 138 ----------
+<Integer List> ::= Integer ',' <Integer List> .
+---------- state 139 ----------
+<Statement> ::= FOR ID '=' <Expression> TO <Expression> .
+<Statement> ::= FOR ID '=' <Expression> TO <Expression> . STEP Integer
+---------- state 140 ----------
+<Expression List> ::= <Expression> ',' <Expression List> .
+---------- state 141 ----------
+<Statement> ::= OPEN <Value> FOR <Access> AS '#' . Integer
+---------- state 142 ----------
+<Statement> ::= FOR ID '=' <Expression> TO <Expression> STEP . Integer
+---------- state 143 ----------
+<Statement> ::= OPEN <Value> FOR <Access> AS '#' Integer .
 ---------- state 144 ----------
 <Statement> ::= FOR ID '=' <Expression> TO <Expression> STEP Integer .
 state token             action goto rule
@@ -1270,9 +1304,8 @@ state token             action goto rule
     2 WAIT                   1   25   28
     2 Remark                 1   26   29
     3 NewLine                1   27    1
-    4 ':'                    1   28    3
-    4 $e                     0    0    4
     4 NewLine                0    0    4
+    4 ':'                    1   28    3
     5 '#'                    1   29    5
     6 <Constant List>        2   30    6
     6 <Constant>             2   31   36
@@ -1280,7 +1313,6 @@ state token             action goto rule
     6 String                 1   33   74
     6 Real                   1   34   75
     7 ID                     1   35    7
-    8 $e                     0    0    8
     8 ':'                    0    0    8
     8 NewLine                0    0    8
     9 ID                     1   36    9
@@ -1338,7 +1370,7 @@ state token             action goto rule
    13 <ID List>              2   53   14
    13 '#'                    1   54   15
    13 ID                     1   55   32
-   14 Id                     1   56   16
+   14 ID                     1   56   16
    15 <ID List>              2   57   17
    15 ID                     1   55   32
    16 <Value>                2   58   18
@@ -1356,30 +1388,45 @@ state token             action goto rule
    17 Integer                1   32   73
    17 String                 1   33   74
    17 Real                   1   34   75
-   18 <Print list>           1   61   20
+   18 ':'                    0    0   44
+   18 NewLine                0    0   44
+   18 <Print List>           2   61   20
    18 '#'                    1   62   21
-   19 <ID List>              2   63   22
+   18 <Expression>           2   63   42
+   18 <And Exp>              2   38   45
+   18 <Not Exp>              2   39   47
+   18 NOT                    1   40   49
+   18 <Compare Exp>          2   41   50
+   18 <Add Exp>              2   42   51
+   18 <Mult Exp>             2   43   59
+   18 <Negate Exp>           2   44   62
+   18 '-'                    1   45   65
+   18 <Power Exp>            2   46   66
+   18 <Value>                2   47   68
+   18 '('                    1   48   69
+   18 ID                     1   49   70
+   18 <Constant>             2   50   72
+   18 Integer                1   32   73
+   18 String                 1   33   74
+   18 Real                   1   34   75
+   19 <ID List>              2   64   22
    19 ID                     1   55   32
-   20 $e                     0    0   23
    20 ':'                    0    0   23
    20 NewLine                0    0   23
-   21 $e                     0    0   24
    21 ':'                    0    0   24
    21 NewLine                0    0   24
-   22 $e                     0    0   25
    22 ':'                    0    0   25
    22 NewLine                0    0   25
-   23 $e                     0    0   26
    23 ':'                    0    0   26
    23 NewLine                0    0   26
-   24 <Value>                2   64   27
+   24 <Value>                2   65   27
    24 '('                    1   48   69
    24 ID                     1   49   70
    24 <Constant>             2   50   72
    24 Integer                1   32   73
    24 String                 1   33   74
    24 Real                   1   34   75
-   25 <Value List>           2   65   28
+   25 <Value List>           2   66   28
    25 <Value>                2   60   34
    25 '('                    1   48   69
    25 ID                     1   49   70
@@ -1387,13 +1434,12 @@ state token             action goto rule
    25 Integer                1   32   73
    25 String                 1   33   74
    25 Real                   1   34   75
-   26 $e                     0    0   29
    26 ':'                    0    0   29
    26 NewLine                0    0   29
-   27 <Lines>                2   66    1
    27 $e                     0    0    2
+   27 <Lines>                2   67    1
    27 Integer                1    2    1
-   28 <Statements>           2   67    3
+   28 <Statements>           2   68    3
    28 <Statement>            2    4    3
    28 CLOSE                  1    5    5
    28 DATA                   1    6    6
@@ -1417,20 +1463,16 @@ state token             action goto rule
    28 SYS                    1   24   27
    28 WAIT                   1   25   28
    28 Remark                 1   26   29
-   29 Integer                1   68    5
-   30 $e                     0    0    6
+   29 Integer                1   69    5
    30 ':'                    0    0    6
    30 NewLine                0    0    6
-   31 ','                    1   69   36
-   31 $e                     0    0   37
    31 ':'                    0    0   37
    31 NewLine                0    0   37
-   32 $e                     0    0   73
+   31 ','                    1   70   36
    32 ','                    0    0   73
    32 ':'                    0    0   73
    32 NewLine                0    0   73
    32 FOR                    0    0   73
-   32 '^'                    0    0   73
    32 '*'                    0    0   73
    32 '/'                    0    0   73
    32 '+'                    0    0   73
@@ -1448,13 +1490,12 @@ state token             action goto rule
    32 STEP                   0    0   73
    32 THEN                   0    0   73
    32 ';'                    0    0   73
+   32 '^'                    0    0   73
    32 ')'                    0    0   73
-   33 $e                     0    0   74
    33 ','                    0    0   74
    33 ':'                    0    0   74
    33 NewLine                0    0   74
    33 FOR                    0    0   74
-   33 '^'                    0    0   74
    33 '*'                    0    0   74
    33 '/'                    0    0   74
    33 '+'                    0    0   74
@@ -1472,13 +1513,12 @@ state token             action goto rule
    33 STEP                   0    0   74
    33 THEN                   0    0   74
    33 ';'                    0    0   74
+   33 '^'                    0    0   74
    33 ')'                    0    0   74
-   34 $e                     0    0   75
    34 ','                    0    0   75
    34 ':'                    0    0   75
    34 NewLine                0    0   75
    34 FOR                    0    0   75
-   34 '^'                    0    0   75
    34 '*'                    0    0   75
    34 '/'                    0    0   75
    34 '+'                    0    0   75
@@ -1496,34 +1536,32 @@ state token             action goto rule
    34 STEP                   0    0   75
    34 THEN                   0    0   75
    34 ';'                    0    0   75
+   34 '^'                    0    0   75
    34 ')'                    0    0   75
-   35 '('                    1   70    7
-   36 '='                    1   71    9
-   37 $e                     0    0   11
+   35 '('                    1   71    7
+   36 '='                    1   72    9
    37 ':'                    0    0   11
    37 NewLine                0    0   11
-   38 OR                     1   72   45
-   38 $e                     0    0   46
    38 TO                     0    0   46
+   38 ':'                    0    0   46
+   38 NewLine                0    0   46
    38 STEP                   0    0   46
    38 THEN                   0    0   46
    38 ','                    0    0   46
    38 ';'                    0    0   46
    38 ')'                    0    0   46
-   38 ':'                    0    0   46
-   38 NewLine                0    0   46
-   39 AND                    1   73   47
-   39 $e                     0    0   48
+   38 OR                     1   73   45
    39 OR                     0    0   48
    39 TO                     0    0   48
+   39 ':'                    0    0   48
+   39 NewLine                0    0   48
    39 STEP                   0    0   48
    39 THEN                   0    0   48
    39 ','                    0    0   48
    39 ';'                    0    0   48
    39 ')'                    0    0   48
-   39 ':'                    0    0   48
-   39 NewLine                0    0   48
-   40 <Compare Exp>          2   74   49
+   39 AND                    1   74   47
+   40 <Compare Exp>          2   75   49
    40 <Add Exp>              2   42   51
    40 <Mult Exp>             2   43   59
    40 <Negate Exp>           2   44   62
@@ -1536,37 +1574,33 @@ state token             action goto rule
    40 Integer                1   32   73
    40 String                 1   33   74
    40 Real                   1   34   75
-   41 $e                     0    0   50
    41 AND                    0    0   50
    41 OR                     0    0   50
    41 TO                     0    0   50
+   41 ':'                    0    0   50
+   41 NewLine                0    0   50
    41 STEP                   0    0   50
    41 THEN                   0    0   50
    41 ','                    0    0   50
    41 ';'                    0    0   50
    41 ')'                    0    0   50
-   41 ':'                    0    0   50
-   41 NewLine                0    0   50
-   42 '='                    1   75   51
-   42 $e                     0    0   58
    42 AND                    0    0   58
    42 OR                     0    0   58
    42 TO                     0    0   58
+   42 ':'                    0    0   58
+   42 NewLine                0    0   58
    42 STEP                   0    0   58
    42 THEN                   0    0   58
    42 ','                    0    0   58
    42 ';'                    0    0   58
    42 ')'                    0    0   58
-   42 ':'                    0    0   58
-   42 NewLine                0    0   58
-   42 '<>'                   1   76   52
-   42 '><'                   1   77   53
-   42 '>'                    1   78   54
-   42 '>='                   1   79   55
-   42 '<'                    1   80   56
-   42 '<='                   1   81   57
-   43 '+'                    1   82   59
-   43 $e                     0    0   61
+   42 '='                    1   76   51
+   42 '<>'                   1   77   52
+   42 '><'                   1   78   53
+   42 '>'                    1   79   54
+   42 '>='                   1   80   55
+   42 '<'                    1   81   56
+   42 '<='                   1   82   57
    43 '='                    0    0   61
    43 '<>'                   0    0   61
    43 '><'                   0    0   61
@@ -1577,16 +1611,15 @@ state token             action goto rule
    43 AND                    0    0   61
    43 OR                     0    0   61
    43 TO                     0    0   61
+   43 ':'                    0    0   61
+   43 NewLine                0    0   61
    43 STEP                   0    0   61
    43 THEN                   0    0   61
    43 ','                    0    0   61
    43 ';'                    0    0   61
    43 ')'                    0    0   61
-   43 ':'                    0    0   61
-   43 NewLine                0    0   61
-   43 '-'                    1   83   60
-   44 '*'                    1   84   62
-   44 $e                     0    0   64
+   43 '+'                    1   83   59
+   43 '-'                    1   84   60
    44 '+'                    0    0   64
    44 '-'                    0    0   64
    44 '='                    0    0   64
@@ -1599,15 +1632,16 @@ state token             action goto rule
    44 AND                    0    0   64
    44 OR                     0    0   64
    44 TO                     0    0   64
+   44 ':'                    0    0   64
+   44 NewLine                0    0   64
    44 STEP                   0    0   64
    44 THEN                   0    0   64
    44 ','                    0    0   64
    44 ';'                    0    0   64
    44 ')'                    0    0   64
-   44 ':'                    0    0   64
-   44 NewLine                0    0   64
-   44 '/'                    1   85   63
-   45 <Power Exp>            2   86   65
+   44 '*'                    1   85   62
+   44 '/'                    1   86   63
+   45 <Power Exp>            2   87   65
    45 <Value>                2   47   68
    45 '('                    1   48   69
    45 ID                     1   49   70
@@ -1615,7 +1649,6 @@ state token             action goto rule
    45 Integer                1   32   73
    45 String                 1   33   74
    45 Real                   1   34   75
-   46 $e                     0    0   66
    46 '*'                    0    0   66
    46 '/'                    0    0   66
    46 '+'                    0    0   66
@@ -1630,16 +1663,14 @@ state token             action goto rule
    46 AND                    0    0   66
    46 OR                     0    0   66
    46 TO                     0    0   66
+   46 ':'                    0    0   66
+   46 NewLine                0    0   66
    46 STEP                   0    0   66
    46 THEN                   0    0   66
    46 ','                    0    0   66
    46 ';'                    0    0   66
    46 ')'                    0    0   66
-   46 ':'                    0    0   66
-   46 NewLine                0    0   66
-   46 '^'                    1   87   67
-   47 $e                     0    0   68
-   47 '^'                    0    0   68
+   46 '^'                    1   88   67
    47 '*'                    0    0   68
    47 '/'                    0    0   68
    47 '+'                    0    0   68
@@ -1654,14 +1685,15 @@ state token             action goto rule
    47 AND                    0    0   68
    47 OR                     0    0   68
    47 TO                     0    0   68
+   47 ':'                    0    0   68
+   47 NewLine                0    0   68
    47 STEP                   0    0   68
    47 THEN                   0    0   68
    47 ','                    0    0   68
    47 ';'                    0    0   68
+   47 '^'                    0    0   68
    47 ')'                    0    0   68
-   47 ':'                    0    0   68
-   47 NewLine                0    0   68
-   48 <Expression>           2   88   69
+   48 <Expression>           2   89   69
    48 <And Exp>              2   38   45
    48 <Not Exp>              2   39   47
    48 NOT                    1   40   49
@@ -1678,12 +1710,10 @@ state token             action goto rule
    48 Integer                1   32   73
    48 String                 1   33   74
    48 Real                   1   34   75
-   49 $e                     0    0   70
    49 FOR                    0    0   70
-   49 ','                    0    0   70
    49 ':'                    0    0   70
    49 NewLine                0    0   70
-   49 '^'                    0    0   70
+   49 ','                    0    0   70
    49 '*'                    0    0   70
    49 '/'                    0    0   70
    49 '+'                    0    0   70
@@ -1701,14 +1731,13 @@ state token             action goto rule
    49 STEP                   0    0   70
    49 THEN                   0    0   70
    49 ';'                    0    0   70
+   49 '^'                    0    0   70
    49 ')'                    0    0   70
-   49 '('                    1   89   71
-   50 $e                     0    0   72
+   49 '('                    1   90   71
    50 FOR                    0    0   72
-   50 ','                    0    0   72
    50 ':'                    0    0   72
    50 NewLine                0    0   72
-   50 '^'                    0    0   72
+   50 ','                    0    0   72
    50 '*'                    0    0   72
    50 '/'                    0    0   72
    50 '+'                    0    0   72
@@ -1726,75 +1755,50 @@ state token             action goto rule
    50 STEP                   0    0   72
    50 THEN                   0    0   72
    50 ';'                    0    0   72
+   50 '^'                    0    0   72
    50 ')'                    0    0   72
-   51 $e                     0    0   12
    51 ':'                    0    0   12
    51 NewLine                0    0   12
-   52 THEN                   1   90   13
-   53 $e                     0    0   14
+   52 THEN                   1   91   13
    53 ':'                    0    0   14
    53 NewLine                0    0   14
-   54 Integer                1   91   15
-   55 ','                    1   92   32
-   55 $e                     0    0   33
+   54 Integer                1   92   15
    55 ':'                    0    0   33
    55 NewLine                0    0   33
-   56 '='                    1   93   16
-   57 $e                     0    0   17
+   55 ','                    1   93   32
+   56 '='                    1   94   16
    57 ':'                    0    0   17
    57 NewLine                0    0   17
-   58 FOR                    1   94   18
-   59 $e                     0    0   19
+   58 FOR                    1   95   18
    59 ':'                    0    0   19
    59 NewLine                0    0   19
-   60 ','                    1   95   34
-   60 $e                     0    0   35
    60 ':'                    0    0   35
    60 NewLine                0    0   35
-   61 $e                     0    0   20
+   60 ','                    1   96   34
    61 ':'                    0    0   20
    61 NewLine                0    0   20
-   62 Integer                1   96   21
-   63 $e                     0    0   22
-   63 ':'                    0    0   22
-   63 NewLine                0    0   22
-   64 $e                     0    0   27
-   64 ':'                    0    0   27
-   64 NewLine                0    0   27
-   65 $e                     0    0   28
-   65 ':'                    0    0   28
-   65 NewLine                0    0   28
-   66 $e                     0    0    1
-   67 $e                     0    0    3
-   67 NewLine                0    0    3
-   68 $e                     0    0    5
-   68 ':'                    0    0    5
-   68 NewLine                0    0    5
-   69 <Constant List>        2   97   36
-   69 <Constant>             2   31   36
-   69 Integer                1   32   73
-   69 String                 1   33   74
-   69 Real                   1   34   75
-   70 <Integer List>         2   98    7
-   70 Integer                1   99   38
-   71 <Expression>           2  100    9
-   71 <And Exp>              2   38   45
-   71 <Not Exp>              2   39   47
-   71 NOT                    1   40   49
-   71 <Compare Exp>          2   41   50
-   71 <Add Exp>              2   42   51
-   71 <Mult Exp>             2   43   59
-   71 <Negate Exp>           2   44   62
-   71 '-'                    1   45   65
-   71 <Power Exp>            2   46   66
-   71 <Value>                2   47   68
-   71 '('                    1   48   69
-   71 ID                     1   49   70
-   71 <Constant>             2   50   72
-   71 Integer                1   32   73
-   71 String                 1   33   74
-   71 Real                   1   34   75
-   72 <Expression>           2  101   45
+   62 Integer                1   97   21
+   63 ':'                    0    0   43
+   63 NewLine                0    0   43
+   63 ';'                    1   98   42
+   64 ':'                    0    0   22
+   64 NewLine                0    0   22
+   65 ':'                    0    0   27
+   65 NewLine                0    0   27
+   66 ':'                    0    0   28
+   66 NewLine                0    0   28
+   67 $e                     0    0    1
+   68 NewLine                0    0    3
+   69 ':'                    0    0    5
+   69 NewLine                0    0    5
+   70 <Constant List>        2   99   36
+   70 <Constant>             2   31   36
+   70 Integer                1   32   73
+   70 String                 1   33   74
+   70 Real                   1   34   75
+   71 <Integer List>         2  100    7
+   71 Integer                1  101   38
+   72 <Expression>           2  102    9
    72 <And Exp>              2   38   45
    72 <Not Exp>              2   39   47
    72 NOT                    1   40   49
@@ -1811,7 +1815,8 @@ state token             action goto rule
    72 Integer                1   32   73
    72 String                 1   33   74
    72 Real                   1   34   75
-   73 <And Exp>              2  102   47
+   73 <Expression>           2  103   45
+   73 <And Exp>              2   38   45
    73 <Not Exp>              2   39   47
    73 NOT                    1   40   49
    73 <Compare Exp>          2   41   50
@@ -1827,31 +1832,33 @@ state token             action goto rule
    73 Integer                1   32   73
    73 String                 1   33   74
    73 Real                   1   34   75
-   74 $e                     0    0   49
-   74 AND                    0    0   49
-   74 OR                     0    0   49
-   74 TO                     0    0   49
-   74 STEP                   0    0   49
-   74 THEN                   0    0   49
-   74 ','                    0    0   49
-   74 ';'                    0    0   49
-   74 ')'                    0    0   49
-   74 ':'                    0    0   49
-   74 NewLine                0    0   49
-   75 <Compare Exp>          2  103   51
-   75 <Add Exp>              2   42   51
-   75 <Mult Exp>             2   43   59
-   75 <Negate Exp>           2   44   62
-   75 '-'                    1   45   65
-   75 <Power Exp>            2   46   66
-   75 <Value>                2   47   68
-   75 '('                    1   48   69
-   75 ID                     1   49   70
-   75 <Constant>             2   50   72
-   75 Integer                1   32   73
-   75 String                 1   33   74
-   75 Real                   1   34   75
-   76 <Compare Exp>          2  104   52
+   74 <And Exp>              2  104   47
+   74 <Not Exp>              2   39   47
+   74 NOT                    1   40   49
+   74 <Compare Exp>          2   41   50
+   74 <Add Exp>              2   42   51
+   74 <Mult Exp>             2   43   59
+   74 <Negate Exp>           2   44   62
+   74 '-'                    1   45   65
+   74 <Power Exp>            2   46   66
+   74 <Value>                2   47   68
+   74 '('                    1   48   69
+   74 ID                     1   49   70
+   74 <Constant>             2   50   72
+   74 Integer                1   32   73
+   74 String                 1   33   74
+   74 Real                   1   34   75
+   75 AND                    0    0   49
+   75 OR                     0    0   49
+   75 TO                     0    0   49
+   75 ':'                    0    0   49
+   75 NewLine                0    0   49
+   75 STEP                   0    0   49
+   75 THEN                   0    0   49
+   75 ','                    0    0   49
+   75 ';'                    0    0   49
+   75 ')'                    0    0   49
+   76 <Compare Exp>          2  105   51
    76 <Add Exp>              2   42   51
    76 <Mult Exp>             2   43   59
    76 <Negate Exp>           2   44   62
@@ -1864,7 +1871,7 @@ state token             action goto rule
    76 Integer                1   32   73
    76 String                 1   33   74
    76 Real                   1   34   75
-   77 <Compare Exp>          2  105   53
+   77 <Compare Exp>          2  106   52
    77 <Add Exp>              2   42   51
    77 <Mult Exp>             2   43   59
    77 <Negate Exp>           2   44   62
@@ -1877,7 +1884,7 @@ state token             action goto rule
    77 Integer                1   32   73
    77 String                 1   33   74
    77 Real                   1   34   75
-   78 <Compare Exp>          2  106   54
+   78 <Compare Exp>          2  107   53
    78 <Add Exp>              2   42   51
    78 <Mult Exp>             2   43   59
    78 <Negate Exp>           2   44   62
@@ -1890,7 +1897,7 @@ state token             action goto rule
    78 Integer                1   32   73
    78 String                 1   33   74
    78 Real                   1   34   75
-   79 <Compare Exp>          2  107   55
+   79 <Compare Exp>          2  108   54
    79 <Add Exp>              2   42   51
    79 <Mult Exp>             2   43   59
    79 <Negate Exp>           2   44   62
@@ -1903,7 +1910,7 @@ state token             action goto rule
    79 Integer                1   32   73
    79 String                 1   33   74
    79 Real                   1   34   75
-   80 <Compare Exp>          2  108   56
+   80 <Compare Exp>          2  109   55
    80 <Add Exp>              2   42   51
    80 <Mult Exp>             2   43   59
    80 <Negate Exp>           2   44   62
@@ -1916,7 +1923,7 @@ state token             action goto rule
    80 Integer                1   32   73
    80 String                 1   33   74
    80 Real                   1   34   75
-   81 <Compare Exp>          2  109   57
+   81 <Compare Exp>          2  110   56
    81 <Add Exp>              2   42   51
    81 <Mult Exp>             2   43   59
    81 <Negate Exp>           2   44   62
@@ -1929,7 +1936,8 @@ state token             action goto rule
    81 Integer                1   32   73
    81 String                 1   33   74
    81 Real                   1   34   75
-   82 <Add Exp>              2  110   59
+   82 <Compare Exp>          2  111   57
+   82 <Add Exp>              2   42   51
    82 <Mult Exp>             2   43   59
    82 <Negate Exp>           2   44   62
    82 '-'                    1   45   65
@@ -1941,7 +1949,7 @@ state token             action goto rule
    82 Integer                1   32   73
    82 String                 1   33   74
    82 Real                   1   34   75
-   83 <Add Exp>              2  111   60
+   83 <Add Exp>              2  112   59
    83 <Mult Exp>             2   43   59
    83 <Negate Exp>           2   44   62
    83 '-'                    1   45   65
@@ -1953,7 +1961,8 @@ state token             action goto rule
    83 Integer                1   32   73
    83 String                 1   33   74
    83 Real                   1   34   75
-   84 <Mult Exp>             2  112   62
+   84 <Add Exp>              2  113   60
+   84 <Mult Exp>             2   43   59
    84 <Negate Exp>           2   44   62
    84 '-'                    1   45   65
    84 <Power Exp>            2   46   66
@@ -1964,7 +1973,7 @@ state token             action goto rule
    84 Integer                1   32   73
    84 String                 1   33   74
    84 Real                   1   34   75
-   85 <Mult Exp>             2  113   63
+   85 <Mult Exp>             2  114   62
    85 <Negate Exp>           2   44   62
    85 '-'                    1   45   65
    85 <Power Exp>            2   46   66
@@ -1975,493 +1984,463 @@ state token             action goto rule
    85 Integer                1   32   73
    85 String                 1   33   74
    85 Real                   1   34   75
-   86 $e                     0    0   65
-   86 '*'                    0    0   65
-   86 '/'                    0    0   65
-   86 '+'                    0    0   65
-   86 '-'                    0    0   65
-   86 '='                    0    0   65
-   86 '<>'                   0    0   65
-   86 '><'                   0    0   65
-   86 '>'                    0    0   65
-   86 '>='                   0    0   65
-   86 '<'                    0    0   65
-   86 '<='                   0    0   65
-   86 AND                    0    0   65
-   86 OR                     0    0   65
-   86 TO                     0    0   65
-   86 STEP                   0    0   65
-   86 THEN                   0    0   65
-   86 ','                    0    0   65
-   86 ';'                    0    0   65
-   86 ')'                    0    0   65
-   86 ':'                    0    0   65
-   86 NewLine                0    0   65
-   86 '^'                    1   87   67
-   87 <Value>                2  114   67
-   87 '('                    1   48   69
-   87 ID                     1   49   70
-   87 <Constant>             2   50   72
-   87 Integer                1   32   73
-   87 String                 1   33   74
-   87 Real                   1   34   75
-   88 ')'                    1  115   69
-   89 <Expression List>      2  116   71
-   89 <Expression>           2  117   40
-   89 <And Exp>              2   38   45
-   89 <Not Exp>              2   39   47
-   89 NOT                    1   40   49
-   89 <Compare Exp>          2   41   50
-   89 <Add Exp>              2   42   51
-   89 <Mult Exp>             2   43   59
-   89 <Negate Exp>           2   44   62
-   89 '-'                    1   45   65
-   89 <Power Exp>            2   46   66
-   89 <Value>                2   47   68
-   89 '('                    1   48   69
-   89 ID                     1   49   70
-   89 <Constant>             2   50   72
-   89 Integer                1   32   73
-   89 String                 1   33   74
-   89 Real                   1   34   75
-   90 <Statement>            2  118   13
-   90 CLOSE                  1    5    5
-   90 DATA                   1    6    6
-   90 DIM                    1    7    7
-   90 END                    1    8    8
-   90 FOR                    1    9    9
-   90 GOTO                   1   10   11
-   90 GOSUB                  1   11   12
-   90 IF                     1   12   13
-   90 INPUT                  1   13   14
-   90 LET                    1   14   16
-   90 NEXT                   1   15   17
-   90 OPEN                   1   16   18
-   90 POKE                   1   17   19
-   90 PRINT                  1   18   20
-   90 READ                   1   19   22
-   90 RETURN                 1   20   23
-   90 RESTORE                1   21   24
-   90 RUN                    1   22   25
-   90 STOP                   1   23   26
-   90 SYS                    1   24   27
-   90 WAIT                   1   25   28
-   90 Remark                 1   26   29
-   91 ','                    1  119   15
-   92 <ID List>              2  120   32
-   92 ID                     1   55   32
-   93 <Expression>           2  121   16
-   93 <And Exp>              2   38   45
-   93 <Not Exp>              2   39   47
-   93 NOT                    1   40   49
-   93 <Compare Exp>          2   41   50
-   93 <Add Exp>              2   42   51
-   93 <Mult Exp>             2   43   59
-   93 <Negate Exp>           2   44   62
-   93 '-'                    1   45   65
-   93 <Power Exp>            2   46   66
-   93 <Value>                2   47   68
-   93 '('                    1   48   69
-   93 ID                     1   49   70
-   93 <Constant>             2   50   72
-   93 Integer                1   32   73
-   93 String                 1   33   74
-   93 Real                   1   34   75
-   94 <Access>               2  122   18
-   94 INPUT                  1  123   30
-   94 OUPUT                  1  124   31
-   95 <Value List>           2  125   34
-   95 <Value>                2   60   34
-   95 '('                    1   48   69
-   95 ID                     1   49   70
-   95 <Constant>             2   50   72
-   95 Integer                1   32   73
-   95 String                 1   33   74
-   95 Real                   1   34   75
-   96 ','                    1  126   21
-   97 $e                     0    0   36
-   97 ':'                    0    0   36
-   97 NewLine                0    0   36
-   98 ')'                    1  127    7
-   99 ','                    1  128   38
-   99 $e                     0    0   39
-   99 ')'                    0    0   39
-  100 TO                     1  129    9
-  101 $e                     0    0   45
-  101 TO                     0    0   45
-  101 STEP                   0    0   45
-  101 THEN                   0    0   45
-  101 ','                    0    0   45
-  101 ';'                    0    0   45
-  101 ')'                    0    0   45
-  101 ':'                    0    0   45
-  101 NewLine                0    0   45
-  102 $e                     0    0   47
-  102 OR                     0    0   47
-  102 TO                     0    0   47
-  102 STEP                   0    0   47
-  102 THEN                   0    0   47
-  102 ','                    0    0   47
-  102 ';'                    0    0   47
-  102 ')'                    0    0   47
-  102 ':'                    0    0   47
-  102 NewLine                0    0   47
-  103 $e                     0    0   51
-  103 AND                    0    0   51
-  103 OR                     0    0   51
-  103 TO                     0    0   51
-  103 STEP                   0    0   51
-  103 THEN                   0    0   51
-  103 ','                    0    0   51
-  103 ';'                    0    0   51
-  103 ')'                    0    0   51
-  103 ':'                    0    0   51
-  103 NewLine                0    0   51
-  104 $e                     0    0   52
-  104 AND                    0    0   52
-  104 OR                     0    0   52
-  104 TO                     0    0   52
-  104 STEP                   0    0   52
-  104 THEN                   0    0   52
-  104 ','                    0    0   52
-  104 ';'                    0    0   52
-  104 ')'                    0    0   52
-  104 ':'                    0    0   52
-  104 NewLine                0    0   52
-  105 $e                     0    0   53
-  105 AND                    0    0   53
-  105 OR                     0    0   53
-  105 TO                     0    0   53
-  105 STEP                   0    0   53
-  105 THEN                   0    0   53
-  105 ','                    0    0   53
-  105 ';'                    0    0   53
-  105 ')'                    0    0   53
-  105 ':'                    0    0   53
-  105 NewLine                0    0   53
-  106 $e                     0    0   54
-  106 AND                    0    0   54
-  106 OR                     0    0   54
-  106 TO                     0    0   54
-  106 STEP                   0    0   54
-  106 THEN                   0    0   54
-  106 ','                    0    0   54
-  106 ';'                    0    0   54
-  106 ')'                    0    0   54
-  106 ':'                    0    0   54
-  106 NewLine                0    0   54
-  107 $e                     0    0   55
-  107 AND                    0    0   55
-  107 OR                     0    0   55
-  107 TO                     0    0   55
-  107 STEP                   0    0   55
-  107 THEN                   0    0   55
-  107 ','                    0    0   55
-  107 ';'                    0    0   55
-  107 ')'                    0    0   55
-  107 ':'                    0    0   55
-  107 NewLine                0    0   55
-  108 $e                     0    0   56
-  108 AND                    0    0   56
-  108 OR                     0    0   56
-  108 TO                     0    0   56
-  108 STEP                   0    0   56
-  108 THEN                   0    0   56
-  108 ','                    0    0   56
-  108 ';'                    0    0   56
-  108 ')'                    0    0   56
-  108 ':'                    0    0   56
-  108 NewLine                0    0   56
-  109 $e                     0    0   57
-  109 AND                    0    0   57
-  109 OR                     0    0   57
-  109 TO                     0    0   57
-  109 STEP                   0    0   57
-  109 THEN                   0    0   57
-  109 ','                    0    0   57
-  109 ';'                    0    0   57
-  109 ')'                    0    0   57
-  109 ':'                    0    0   57
-  109 NewLine                0    0   57
-  110 $e                     0    0   59
-  110 '='                    0    0   59
-  110 '<>'                   0    0   59
-  110 '><'                   0    0   59
-  110 '>'                    0    0   59
-  110 '>='                   0    0   59
-  110 '<'                    0    0   59
-  110 '<='                   0    0   59
-  110 AND                    0    0   59
-  110 OR                     0    0   59
-  110 TO                     0    0   59
-  110 STEP                   0    0   59
-  110 THEN                   0    0   59
-  110 ','                    0    0   59
-  110 ';'                    0    0   59
-  110 ')'                    0    0   59
-  110 ':'                    0    0   59
-  110 NewLine                0    0   59
-  111 $e                     0    0   60
-  111 '='                    0    0   60
-  111 '<>'                   0    0   60
-  111 '><'                   0    0   60
-  111 '>'                    0    0   60
-  111 '>='                   0    0   60
-  111 '<'                    0    0   60
-  111 '<='                   0    0   60
-  111 AND                    0    0   60
-  111 OR                     0    0   60
-  111 TO                     0    0   60
-  111 STEP                   0    0   60
-  111 THEN                   0    0   60
-  111 ','                    0    0   60
-  111 ';'                    0    0   60
-  111 ')'                    0    0   60
-  111 ':'                    0    0   60
-  111 NewLine                0    0   60
-  112 $e                     0    0   62
-  112 '+'                    0    0   62
-  112 '-'                    0    0   62
-  112 '='                    0    0   62
-  112 '<>'                   0    0   62
-  112 '><'                   0    0   62
-  112 '>'                    0    0   62
-  112 '>='                   0    0   62
-  112 '<'                    0    0   62
-  112 '<='                   0    0   62
-  112 AND                    0    0   62
-  112 OR                     0    0   62
-  112 TO                     0    0   62
-  112 STEP                   0    0   62
-  112 THEN                   0    0   62
-  112 ','                    0    0   62
-  112 ';'                    0    0   62
-  112 ')'                    0    0   62
-  112 ':'                    0    0   62
-  112 NewLine                0    0   62
-  113 $e                     0    0   63
-  113 '+'                    0    0   63
-  113 '-'                    0    0   63
-  113 '='                    0    0   63
-  113 '<>'                   0    0   63
-  113 '><'                   0    0   63
-  113 '>'                    0    0   63
-  113 '>='                   0    0   63
-  113 '<'                    0    0   63
-  113 '<='                   0    0   63
-  113 AND                    0    0   63
-  113 OR                     0    0   63
-  113 TO                     0    0   63
-  113 STEP                   0    0   63
-  113 THEN                   0    0   63
-  113 ','                    0    0   63
-  113 ';'                    0    0   63
-  113 ')'                    0    0   63
-  113 ':'                    0    0   63
-  113 NewLine                0    0   63
-  114 $e                     0    0   67
-  114 '^'                    0    0   67
-  114 '*'                    0    0   67
-  114 '/'                    0    0   67
-  114 '+'                    0    0   67
-  114 '-'                    0    0   67
-  114 '='                    0    0   67
-  114 '<>'                   0    0   67
-  114 '><'                   0    0   67
-  114 '>'                    0    0   67
-  114 '>='                   0    0   67
-  114 '<'                    0    0   67
-  114 '<='                   0    0   67
-  114 AND                    0    0   67
-  114 OR                     0    0   67
-  114 TO                     0    0   67
-  114 STEP                   0    0   67
-  114 THEN                   0    0   67
-  114 ','                    0    0   67
-  114 ';'                    0    0   67
-  114 ')'                    0    0   67
-  114 ':'                    0    0   67
-  114 NewLine                0    0   67
-  115 $e                     0    0   69
-  115 FOR                    0    0   69
-  115 ','                    0    0   69
-  115 ':'                    0    0   69
-  115 NewLine                0    0   69
-  115 '^'                    0    0   69
-  115 '*'                    0    0   69
-  115 '/'                    0    0   69
-  115 '+'                    0    0   69
-  115 '-'                    0    0   69
-  115 '='                    0    0   69
-  115 '<>'                   0    0   69
-  115 '><'                   0    0   69
-  115 '>'                    0    0   69
-  115 '>='                   0    0   69
-  115 '<'                    0    0   69
-  115 '<='                   0    0   69
-  115 AND                    0    0   69
-  115 OR                     0    0   69
-  115 TO                     0    0   69
-  115 STEP                   0    0   69
-  115 THEN                   0    0   69
-  115 ';'                    0    0   69
-  115 ')'                    0    0   69
-  116 ')'                    1  130   71
-  117 ','                    1  131   40
-  117 $e                     0    0   41
-  117 ')'                    0    0   41
-  118 $e                     0    0   13
-  118 ':'                    0    0   13
-  118 NewLine                0    0   13
-  119 <ID List>              2  132   15
-  119 ID                     1   55   32
-  120 $e                     0    0   32
-  120 ':'                    0    0   32
-  120 NewLine                0    0   32
-  121 $e                     0    0   16
-  121 ':'                    0    0   16
-  121 NewLine                0    0   16
-  122 AS                     1  133   18
-  123 $e                     0    0   30
-  123 AS                     0    0   30
-  124 $e                     0    0   31
-  124 AS                     0    0   31
-  125 $e                     0    0   34
-  125 ':'                    0    0   34
-  125 NewLine                0    0   34
-  126 <Print List>           2  134   21
-  126 $e                     0    0   44
-  126 ':'                    0    0   44
-  126 NewLine                0    0   44
-  126 <Expression>           2  135   42
-  126 <And Exp>              2   38   45
-  126 <Not Exp>              2   39   47
-  126 NOT                    1   40   49
-  126 <Compare Exp>          2   41   50
-  126 <Add Exp>              2   42   51
-  126 <Mult Exp>             2   43   59
-  126 <Negate Exp>           2   44   62
-  126 '-'                    1   45   65
-  126 <Power Exp>            2   46   66
-  126 <Value>                2   47   68
-  126 '('                    1   48   69
-  126 ID                     1   49   70
-  126 <Constant>             2   50   72
-  126 Integer                1   32   73
-  126 String                 1   33   74
-  126 Real                   1   34   75
-  127 $e                     0    0    7
-  127 ':'                    0    0    7
-  127 NewLine                0    0    7
-  128 <Integer List>         2  136   38
-  128 Integer                1   99   38
-  129 <Expression>           2  137    9
-  129 <And Exp>              2   38   45
-  129 <Not Exp>              2   39   47
-  129 NOT                    1   40   49
-  129 <Compare Exp>          2   41   50
-  129 <Add Exp>              2   42   51
-  129 <Mult Exp>             2   43   59
-  129 <Negate Exp>           2   44   62
-  129 '-'                    1   45   65
-  129 <Power Exp>            2   46   66
-  129 <Value>                2   47   68
-  129 '('                    1   48   69
-  129 ID                     1   49   70
-  129 <Constant>             2   50   72
-  129 Integer                1   32   73
-  129 String                 1   33   74
-  129 Real                   1   34   75
-  130 $e                     0    0   71
-  130 FOR                    0    0   71
-  130 ','                    0    0   71
-  130 ':'                    0    0   71
-  130 NewLine                0    0   71
-  130 '^'                    0    0   71
-  130 '*'                    0    0   71
-  130 '/'                    0    0   71
-  130 '+'                    0    0   71
-  130 '-'                    0    0   71
-  130 '='                    0    0   71
-  130 '<>'                   0    0   71
-  130 '><'                   0    0   71
-  130 '>'                    0    0   71
-  130 '>='                   0    0   71
-  130 '<'                    0    0   71
-  130 '<='                   0    0   71
-  130 AND                    0    0   71
-  130 OR                     0    0   71
-  130 TO                     0    0   71
-  130 STEP                   0    0   71
-  130 THEN                   0    0   71
-  130 ';'                    0    0   71
-  130 ')'                    0    0   71
-  131 <Expression List>      2  138   40
-  131 <Expression>           2  117   40
-  131 <And Exp>              2   38   45
-  131 <Not Exp>              2   39   47
-  131 NOT                    1   40   49
-  131 <Compare Exp>          2   41   50
-  131 <Add Exp>              2   42   51
-  131 <Mult Exp>             2   43   59
-  131 <Negate Exp>           2   44   62
-  131 '-'                    1   45   65
-  131 <Power Exp>            2   46   66
-  131 <Value>                2   47   68
-  131 '('                    1   48   69
-  131 ID                     1   49   70
-  131 <Constant>             2   50   72
-  131 Integer                1   32   73
-  131 String                 1   33   74
-  131 Real                   1   34   75
-  132 $e                     0    0   15
-  132 ':'                    0    0   15
-  132 NewLine                0    0   15
-  133 '#'                    1  139   18
-  134 $e                     0    0   21
-  134 ':'                    0    0   21
-  134 NewLine                0    0   21
-  135 ';'                    1  140   42
-  135 $e                     0    0   43
-  135 ':'                    0    0   43
-  135 NewLine                0    0   43
-  136 $e                     0    0   38
-  136 ')'                    0    0   38
-  137 $e                     0    0    9
-  137 ':'                    0    0    9
-  137 NewLine                0    0    9
-  137 STEP                   1  141   10
-  138 $e                     0    0   40
-  138 ')'                    0    0   40
-  139 Integer                1  142   18
-  140 <Print List>           2  143   42
-  140 $e                     0    0   44
-  140 ':'                    0    0   44
-  140 NewLine                0    0   44
-  140 <Expression>           2  135   42
-  140 <And Exp>              2   38   45
-  140 <Not Exp>              2   39   47
-  140 NOT                    1   40   49
-  140 <Compare Exp>          2   41   50
-  140 <Add Exp>              2   42   51
-  140 <Mult Exp>             2   43   59
-  140 <Negate Exp>           2   44   62
-  140 '-'                    1   45   65
-  140 <Power Exp>            2   46   66
-  140 <Value>                2   47   68
-  140 '('                    1   48   69
-  140 ID                     1   49   70
-  140 <Constant>             2   50   72
-  140 Integer                1   32   73
-  140 String                 1   33   74
-  140 Real                   1   34   75
-  141 Integer                1  144   10
-  142 $e                     0    0   18
-  142 ':'                    0    0   18
-  142 NewLine                0    0   18
-  143 $e                     0    0   42
-  143 ':'                    0    0   42
-  143 NewLine                0    0   42
-  144 $e                     0    0   10
+   86 <Mult Exp>             2  115   63
+   86 <Negate Exp>           2   44   62
+   86 '-'                    1   45   65
+   86 <Power Exp>            2   46   66
+   86 <Value>                2   47   68
+   86 '('                    1   48   69
+   86 ID                     1   49   70
+   86 <Constant>             2   50   72
+   86 Integer                1   32   73
+   86 String                 1   33   74
+   86 Real                   1   34   75
+   87 '*'                    0    0   65
+   87 '/'                    0    0   65
+   87 '+'                    0    0   65
+   87 '-'                    0    0   65
+   87 '='                    0    0   65
+   87 '<>'                   0    0   65
+   87 '><'                   0    0   65
+   87 '>'                    0    0   65
+   87 '>='                   0    0   65
+   87 '<'                    0    0   65
+   87 '<='                   0    0   65
+   87 AND                    0    0   65
+   87 OR                     0    0   65
+   87 TO                     0    0   65
+   87 ':'                    0    0   65
+   87 NewLine                0    0   65
+   87 STEP                   0    0   65
+   87 THEN                   0    0   65
+   87 ','                    0    0   65
+   87 ';'                    0    0   65
+   87 ')'                    0    0   65
+   87 '^'                    1   88   67
+   88 <Value>                2  116   67
+   88 '('                    1   48   69
+   88 ID                     1   49   70
+   88 <Constant>             2   50   72
+   88 Integer                1   32   73
+   88 String                 1   33   74
+   88 Real                   1   34   75
+   89 ')'                    1  117   69
+   90 <Expression List>      2  118   71
+   90 <Expression>           2  119   40
+   90 <And Exp>              2   38   45
+   90 <Not Exp>              2   39   47
+   90 NOT                    1   40   49
+   90 <Compare Exp>          2   41   50
+   90 <Add Exp>              2   42   51
+   90 <Mult Exp>             2   43   59
+   90 <Negate Exp>           2   44   62
+   90 '-'                    1   45   65
+   90 <Power Exp>            2   46   66
+   90 <Value>                2   47   68
+   90 '('                    1   48   69
+   90 ID                     1   49   70
+   90 <Constant>             2   50   72
+   90 Integer                1   32   73
+   90 String                 1   33   74
+   90 Real                   1   34   75
+   91 <Statement>            2  120   13
+   91 CLOSE                  1    5    5
+   91 DATA                   1    6    6
+   91 DIM                    1    7    7
+   91 END                    1    8    8
+   91 FOR                    1    9    9
+   91 GOTO                   1   10   11
+   91 GOSUB                  1   11   12
+   91 IF                     1   12   13
+   91 INPUT                  1   13   14
+   91 LET                    1   14   16
+   91 NEXT                   1   15   17
+   91 OPEN                   1   16   18
+   91 POKE                   1   17   19
+   91 PRINT                  1   18   20
+   91 READ                   1   19   22
+   91 RETURN                 1   20   23
+   91 RESTORE                1   21   24
+   91 RUN                    1   22   25
+   91 STOP                   1   23   26
+   91 SYS                    1   24   27
+   91 WAIT                   1   25   28
+   91 Remark                 1   26   29
+   92 ','                    1  121   15
+   93 <ID List>              2  122   32
+   93 ID                     1   55   32
+   94 <Expression>           2  123   16
+   94 <And Exp>              2   38   45
+   94 <Not Exp>              2   39   47
+   94 NOT                    1   40   49
+   94 <Compare Exp>          2   41   50
+   94 <Add Exp>              2   42   51
+   94 <Mult Exp>             2   43   59
+   94 <Negate Exp>           2   44   62
+   94 '-'                    1   45   65
+   94 <Power Exp>            2   46   66
+   94 <Value>                2   47   68
+   94 '('                    1   48   69
+   94 ID                     1   49   70
+   94 <Constant>             2   50   72
+   94 Integer                1   32   73
+   94 String                 1   33   74
+   94 Real                   1   34   75
+   95 <Access>               2  124   18
+   95 INPUT                  1  125   30
+   95 OUTPUT                 1  126   31
+   96 <Value List>           2  127   34
+   96 <Value>                2   60   34
+   96 '('                    1   48   69
+   96 ID                     1   49   70
+   96 <Constant>             2   50   72
+   96 Integer                1   32   73
+   96 String                 1   33   74
+   96 Real                   1   34   75
+   97 ','                    1  128   21
+   98 ':'                    0    0   44
+   98 NewLine                0    0   44
+   98 <Print List>           2  129   42
+   98 <Expression>           2   63   42
+   98 <And Exp>              2   38   45
+   98 <Not Exp>              2   39   47
+   98 NOT                    1   40   49
+   98 <Compare Exp>          2   41   50
+   98 <Add Exp>              2   42   51
+   98 <Mult Exp>             2   43   59
+   98 <Negate Exp>           2   44   62
+   98 '-'                    1   45   65
+   98 <Power Exp>            2   46   66
+   98 <Value>                2   47   68
+   98 '('                    1   48   69
+   98 ID                     1   49   70
+   98 <Constant>             2   50   72
+   98 Integer                1   32   73
+   98 String                 1   33   74
+   98 Real                   1   34   75
+   99 ':'                    0    0   36
+   99 NewLine                0    0   36
+  100 ')'                    1  130    7
+  101 ')'                    0    0   39
+  101 ','                    1  131   38
+  102 TO                     1  132    9
+  103 TO                     0    0   45
+  103 ':'                    0    0   45
+  103 NewLine                0    0   45
+  103 STEP                   0    0   45
+  103 THEN                   0    0   45
+  103 ','                    0    0   45
+  103 ';'                    0    0   45
+  103 ')'                    0    0   45
+  104 OR                     0    0   47
+  104 TO                     0    0   47
+  104 ':'                    0    0   47
+  104 NewLine                0    0   47
+  104 STEP                   0    0   47
+  104 THEN                   0    0   47
+  104 ','                    0    0   47
+  104 ';'                    0    0   47
+  104 ')'                    0    0   47
+  105 AND                    0    0   51
+  105 OR                     0    0   51
+  105 TO                     0    0   51
+  105 ':'                    0    0   51
+  105 NewLine                0    0   51
+  105 STEP                   0    0   51
+  105 THEN                   0    0   51
+  105 ','                    0    0   51
+  105 ';'                    0    0   51
+  105 ')'                    0    0   51
+  106 AND                    0    0   52
+  106 OR                     0    0   52
+  106 TO                     0    0   52
+  106 ':'                    0    0   52
+  106 NewLine                0    0   52
+  106 STEP                   0    0   52
+  106 THEN                   0    0   52
+  106 ','                    0    0   52
+  106 ';'                    0    0   52
+  106 ')'                    0    0   52
+  107 AND                    0    0   53
+  107 OR                     0    0   53
+  107 TO                     0    0   53
+  107 ':'                    0    0   53
+  107 NewLine                0    0   53
+  107 STEP                   0    0   53
+  107 THEN                   0    0   53
+  107 ','                    0    0   53
+  107 ';'                    0    0   53
+  107 ')'                    0    0   53
+  108 AND                    0    0   54
+  108 OR                     0    0   54
+  108 TO                     0    0   54
+  108 ':'                    0    0   54
+  108 NewLine                0    0   54
+  108 STEP                   0    0   54
+  108 THEN                   0    0   54
+  108 ','                    0    0   54
+  108 ';'                    0    0   54
+  108 ')'                    0    0   54
+  109 AND                    0    0   55
+  109 OR                     0    0   55
+  109 TO                     0    0   55
+  109 ':'                    0    0   55
+  109 NewLine                0    0   55
+  109 STEP                   0    0   55
+  109 THEN                   0    0   55
+  109 ','                    0    0   55
+  109 ';'                    0    0   55
+  109 ')'                    0    0   55
+  110 AND                    0    0   56
+  110 OR                     0    0   56
+  110 TO                     0    0   56
+  110 ':'                    0    0   56
+  110 NewLine                0    0   56
+  110 STEP                   0    0   56
+  110 THEN                   0    0   56
+  110 ','                    0    0   56
+  110 ';'                    0    0   56
+  110 ')'                    0    0   56
+  111 AND                    0    0   57
+  111 OR                     0    0   57
+  111 TO                     0    0   57
+  111 ':'                    0    0   57
+  111 NewLine                0    0   57
+  111 STEP                   0    0   57
+  111 THEN                   0    0   57
+  111 ','                    0    0   57
+  111 ';'                    0    0   57
+  111 ')'                    0    0   57
+  112 '='                    0    0   59
+  112 '<>'                   0    0   59
+  112 '><'                   0    0   59
+  112 '>'                    0    0   59
+  112 '>='                   0    0   59
+  112 '<'                    0    0   59
+  112 '<='                   0    0   59
+  112 AND                    0    0   59
+  112 OR                     0    0   59
+  112 TO                     0    0   59
+  112 ':'                    0    0   59
+  112 NewLine                0    0   59
+  112 STEP                   0    0   59
+  112 THEN                   0    0   59
+  112 ','                    0    0   59
+  112 ';'                    0    0   59
+  112 ')'                    0    0   59
+  113 '='                    0    0   60
+  113 '<>'                   0    0   60
+  113 '><'                   0    0   60
+  113 '>'                    0    0   60
+  113 '>='                   0    0   60
+  113 '<'                    0    0   60
+  113 '<='                   0    0   60
+  113 AND                    0    0   60
+  113 OR                     0    0   60
+  113 TO                     0    0   60
+  113 ':'                    0    0   60
+  113 NewLine                0    0   60
+  113 STEP                   0    0   60
+  113 THEN                   0    0   60
+  113 ','                    0    0   60
+  113 ';'                    0    0   60
+  113 ')'                    0    0   60
+  114 '+'                    0    0   62
+  114 '-'                    0    0   62
+  114 '='                    0    0   62
+  114 '<>'                   0    0   62
+  114 '><'                   0    0   62
+  114 '>'                    0    0   62
+  114 '>='                   0    0   62
+  114 '<'                    0    0   62
+  114 '<='                   0    0   62
+  114 AND                    0    0   62
+  114 OR                     0    0   62
+  114 TO                     0    0   62
+  114 ':'                    0    0   62
+  114 NewLine                0    0   62
+  114 STEP                   0    0   62
+  114 THEN                   0    0   62
+  114 ','                    0    0   62
+  114 ';'                    0    0   62
+  114 ')'                    0    0   62
+  115 '+'                    0    0   63
+  115 '-'                    0    0   63
+  115 '='                    0    0   63
+  115 '<>'                   0    0   63
+  115 '><'                   0    0   63
+  115 '>'                    0    0   63
+  115 '>='                   0    0   63
+  115 '<'                    0    0   63
+  115 '<='                   0    0   63
+  115 AND                    0    0   63
+  115 OR                     0    0   63
+  115 TO                     0    0   63
+  115 ':'                    0    0   63
+  115 NewLine                0    0   63
+  115 STEP                   0    0   63
+  115 THEN                   0    0   63
+  115 ','                    0    0   63
+  115 ';'                    0    0   63
+  115 ')'                    0    0   63
+  116 '*'                    0    0   67
+  116 '/'                    0    0   67
+  116 '+'                    0    0   67
+  116 '-'                    0    0   67
+  116 '='                    0    0   67
+  116 '<>'                   0    0   67
+  116 '><'                   0    0   67
+  116 '>'                    0    0   67
+  116 '>='                   0    0   67
+  116 '<'                    0    0   67
+  116 '<='                   0    0   67
+  116 AND                    0    0   67
+  116 OR                     0    0   67
+  116 TO                     0    0   67
+  116 ':'                    0    0   67
+  116 NewLine                0    0   67
+  116 STEP                   0    0   67
+  116 THEN                   0    0   67
+  116 ','                    0    0   67
+  116 ';'                    0    0   67
+  116 '^'                    0    0   67
+  116 ')'                    0    0   67
+  117 FOR                    0    0   69
+  117 ':'                    0    0   69
+  117 NewLine                0    0   69
+  117 ','                    0    0   69
+  117 '*'                    0    0   69
+  117 '/'                    0    0   69
+  117 '+'                    0    0   69
+  117 '-'                    0    0   69
+  117 '='                    0    0   69
+  117 '<>'                   0    0   69
+  117 '><'                   0    0   69
+  117 '>'                    0    0   69
+  117 '>='                   0    0   69
+  117 '<'                    0    0   69
+  117 '<='                   0    0   69
+  117 AND                    0    0   69
+  117 OR                     0    0   69
+  117 TO                     0    0   69
+  117 STEP                   0    0   69
+  117 THEN                   0    0   69
+  117 ';'                    0    0   69
+  117 '^'                    0    0   69
+  117 ')'                    0    0   69
+  118 ')'                    1  133   71
+  119 ')'                    0    0   41
+  119 ','                    1  134   40
+  120 ':'                    0    0   13
+  120 NewLine                0    0   13
+  121 <ID List>              2  135   15
+  121 ID                     1   55   32
+  122 ':'                    0    0   32
+  122 NewLine                0    0   32
+  123 ':'                    0    0   16
+  123 NewLine                0    0   16
+  124 AS                     1  136   18
+  125 AS                     0    0   30
+  126 AS                     0    0   31
+  127 ':'                    0    0   34
+  127 NewLine                0    0   34
+  128 ':'                    0    0   44
+  128 NewLine                0    0   44
+  128 <Print List>           2  137   21
+  128 <Expression>           2   63   42
+  128 <And Exp>              2   38   45
+  128 <Not Exp>              2   39   47
+  128 NOT                    1   40   49
+  128 <Compare Exp>          2   41   50
+  128 <Add Exp>              2   42   51
+  128 <Mult Exp>             2   43   59
+  128 <Negate Exp>           2   44   62
+  128 '-'                    1   45   65
+  128 <Power Exp>            2   46   66
+  128 <Value>                2   47   68
+  128 '('                    1   48   69
+  128 ID                     1   49   70
+  128 <Constant>             2   50   72
+  128 Integer                1   32   73
+  128 String                 1   33   74
+  128 Real                   1   34   75
+  129 ':'                    0    0   42
+  129 NewLine                0    0   42
+  130 ':'                    0    0    7
+  130 NewLine                0    0    7
+  131 <Integer List>         2  138   38
+  131 Integer                1  101   38
+  132 <Expression>           2  139    9
+  132 <And Exp>              2   38   45
+  132 <Not Exp>              2   39   47
+  132 NOT                    1   40   49
+  132 <Compare Exp>          2   41   50
+  132 <Add Exp>              2   42   51
+  132 <Mult Exp>             2   43   59
+  132 <Negate Exp>           2   44   62
+  132 '-'                    1   45   65
+  132 <Power Exp>            2   46   66
+  132 <Value>                2   47   68
+  132 '('                    1   48   69
+  132 ID                     1   49   70
+  132 <Constant>             2   50   72
+  132 Integer                1   32   73
+  132 String                 1   33   74
+  132 Real                   1   34   75
+  133 FOR                    0    0   71
+  133 ':'                    0    0   71
+  133 NewLine                0    0   71
+  133 ','                    0    0   71
+  133 '*'                    0    0   71
+  133 '/'                    0    0   71
+  133 '+'                    0    0   71
+  133 '-'                    0    0   71
+  133 '='                    0    0   71
+  133 '<>'                   0    0   71
+  133 '><'                   0    0   71
+  133 '>'                    0    0   71
+  133 '>='                   0    0   71
+  133 '<'                    0    0   71
+  133 '<='                   0    0   71
+  133 AND                    0    0   71
+  133 OR                     0    0   71
+  133 TO                     0    0   71
+  133 STEP                   0    0   71
+  133 THEN                   0    0   71
+  133 ';'                    0    0   71
+  133 '^'                    0    0   71
+  133 ')'                    0    0   71
+  134 <Expression List>      2  140   40
+  134 <Expression>           2  119   40
+  134 <And Exp>              2   38   45
+  134 <Not Exp>              2   39   47
+  134 NOT                    1   40   49
+  134 <Compare Exp>          2   41   50
+  134 <Add Exp>              2   42   51
+  134 <Mult Exp>             2   43   59
+  134 <Negate Exp>           2   44   62
+  134 '-'                    1   45   65
+  134 <Power Exp>            2   46   66
+  134 <Value>                2   47   68
+  134 '('                    1   48   69
+  134 ID                     1   49   70
+  134 <Constant>             2   50   72
+  134 Integer                1   32   73
+  134 String                 1   33   74
+  134 Real                   1   34   75
+  135 ':'                    0    0   15
+  135 NewLine                0    0   15
+  136 '#'                    1  141   18
+  137 ':'                    0    0   21
+  137 NewLine                0    0   21
+  138 ')'                    0    0   38
+  139 ':'                    0    0    9
+  139 NewLine                0    0    9
+  139 STEP                   1  142   10
+  140 ')'                    0    0   40
+  141 Integer                1  143   18
+  142 Integer                1  144   10
+  143 ':'                    0    0   18
+  143 NewLine                0    0   18
   144 ':'                    0    0   10
   144 NewLine                0    0   10

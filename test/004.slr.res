@@ -58,8 +58,8 @@ b > h + i .
 c > l * m .
 state token action goto rule
 ----- ----- ------ ---- ----
-    0 a          2    1    0
     0 $e         0    0    4
+    0 a          2    1    0
     0 b          2    2    1
     0 c          2    3    2
     0 e          1    4    3
@@ -74,9 +74,7 @@ state token action goto rule
     4 *          1   11    3
     5 $e         0    0    5
     6 +          1   12    6
-    7 $e         0    0    7
     7 +          0    0    7
-    8 $e         0    0    8
     8 +          0    0    8
     9 *          1   13    9
    10 d          1   14    2
@@ -86,5 +84,4 @@ state token action goto rule
    14 $e         0    0    2
    15 $e         0    0    3
    16 $e         0    0    6
-   17 $e         0    0    9
    17 +          0    0    9

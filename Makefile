@@ -8,6 +8,7 @@ pg: main.c pg.c pg.h show.c show.h pg.o show.o
 
 test: pg
 	$(MAKE) -C test
+	$(MAKE) -C ex test
 
 testv: pg
 	$(MAKE) -C test testv
@@ -17,6 +18,7 @@ ex: pg
 
 clean:
 	$(MAKE) -C ex clean
+	$(MAKE) -C test clean
 	rm -f pg *.o
 
 .PHONY: test testv ex

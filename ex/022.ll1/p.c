@@ -81,14 +81,18 @@ static char* gn(char *p) {
 }
 
 static int lex(char *p) {
+  int operand=1;
   while(1) {
     while(*p==' ') ++p;
     if(!*p) break;
-    if(isdigit(*p)||(*p=='-'&&isdigit(p[1]))) p=gn(p);
-    else if(*p=='+') { ++p; push(T004,'+'); }
-    else if(*p=='*') { ++p; push(T004,'*'); }
-    else if(*p=='(') { ++p; push(T006,0); }
-    else if(*p==')') { ++p; push(T007,0); }
+    if(isdigit(*p)||(operand&&*p=='-'&&isdigit(p[1])))
+      { p=gn(p); operand=0; }
+    else if(*p=='+') { ++p; push(T004,'+'); operand=1; }
+    else if(*p=='-') { ++p; push(T004,'-'); operand=1; }
+    else if(*p=='*') { ++p; push(T004,'*'); operand=1; }
+    else if(*p=='/') { ++p; push(T004,'/'); operand=1; }
+    else if(*p=='(') { ++p; push(T006,0); operand=1; }
+    else if(*p==')') { ++p; push(T007,0); operand=0; }
     else if(*p=='\n') { push(T008,0); break; }
     else if(*p=='\\'&&*(p+1)=='\\') exit(0);
     else { printf("lex\n"); return 0; }

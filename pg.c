@@ -4,61 +4,259 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdint.h>
 
 static int gmode;
 
-static rule RA[1024];
+static rule *RA;
 static int RN=1;
+static int RAM;
 
 /* states */
-static int S[10240]; /* state */
-static int R[10240]; /* rule */
-static int M[10240]; /* mark */
-static int D[10240]; /* deleted */
+static int *S; /* state */
+static int *R; /* rule */
+static int *M; /* mark */
+static int *D; /* deleted */
 static int N;        /* rowcount */
 static int SN;       /* states count */
-static char *C[10240][32]; /* context=first(C) first(0)=$e */
-static int CN[10240];
+static char ***C; /* LR(1) lookaheads */
+static int *CN,*CM;
+static int NM;
+static int *SB,*SC,SBM;
+static int *SH,SHM,SHN;
 
 /* transitions */
-static int   TS[10240]; /* state */
-static char *TT[10240]; /* token */
-static int   TA[10240]; /* action 0=reduce 1=shift 2=goto */
-static int   TG[10240]; /* goto state */
-static int   TR[10240]; /* rule */
-static int   TM[10240]; /* mark */
-static int   TD[10240]; /* deleted */
+static int   *TS; /* state */
+static char **TT; /* token */
+static int   *TA; /* action 0=reduce 1=shift 2=goto */
+static int   *TG; /* goto state */
+static int   *TR; /* rule */
+static int   *TM; /* mark */
+static int   *TD; /* deleted */
 static int   TN;
+static int   TNM;
 
 /* goto markers */
 static int GN;
 static int GTN;
 
+static void die(char *s) {
+  fprintf(stderr,"error: %s\n",s);
+  exit(1);
+}
+
+static void ensurerules(int n) {
+  int m;
+  rule *p;
+  if(n<=RAM) return;
+  m=RAM?RAM:128;
+  while(m<n) m*=2;
+  p=realloc(RA,sizeof(*RA)*m);
+  if(!p) die("out of memory");
+  memset(p+RAM,0,sizeof(*RA)*(m-RAM));
+  RA=p;
+  RAM=m;
+}
+
+static void ensureitems(int n) {
+  int m,i;
+  if(n<=NM) return;
+  m=NM?NM:1024;
+  while(m<n) m*=2;
+  S=realloc(S,sizeof(*S)*m);
+  R=realloc(R,sizeof(*R)*m);
+  M=realloc(M,sizeof(*M)*m);
+  D=realloc(D,sizeof(*D)*m);
+  C=realloc(C,sizeof(*C)*m);
+  CN=realloc(CN,sizeof(*CN)*m);
+  CM=realloc(CM,sizeof(*CM)*m);
+  if(!S||!R||!M||!D||!C||!CN||!CM) die("out of memory");
+  for(i=NM;i<m;i++) {
+    S[i]=R[i]=M[i]=0;
+    D[i]=0;
+    C[i]=0;
+    CN[i]=CM[i]=0;
+  }
+  NM=m;
+}
+
+static void ensurecontext(int i, int n) {
+  int m;
+  if(n<=CM[i]) return;
+  m=CM[i]?CM[i]:8;
+  while(m<n) m*=2;
+  C[i]=realloc(C[i],sizeof(*C[i])*m);
+  if(!C[i]) die("out of memory");
+  CM[i]=m;
+}
+
+static void ensurestates(int n) {
+  int m,i;
+  if(n<=SBM) return;
+  m=SBM?SBM:256;
+  while(m<n) m*=2;
+  SB=realloc(SB,sizeof(*SB)*m);
+  SC=realloc(SC,sizeof(*SC)*m);
+  if(!SB||!SC) die("out of memory");
+  for(i=SBM;i<m;i++) SB[i]=SC[i]=0;
+  SBM=m;
+}
+
+static int itemend(int s) {
+  return SB[s]+SC[s];
+}
+
+static void ensuretransitions(int n) {
+  int m,i;
+  if(n<=TNM) return;
+  m=TNM?TNM:1024;
+  while(m<n) m*=2;
+  TS=realloc(TS,sizeof(*TS)*m);
+  TT=realloc(TT,sizeof(*TT)*m);
+  TA=realloc(TA,sizeof(*TA)*m);
+  TG=realloc(TG,sizeof(*TG)*m);
+  TR=realloc(TR,sizeof(*TR)*m);
+  TM=realloc(TM,sizeof(*TM)*m);
+  TD=realloc(TD,sizeof(*TD)*m);
+  if(!TS||!TT||!TA||!TG||!TR||!TM||!TD) die("out of memory");
+  for(i=TNM;i<m;i++) TD[i]=0;
+  TNM=m;
+}
+
+static void checkitem() {
+  ensureitems(N+1);
+}
+
+static void checktrans() {
+  ensuretransitions(TN+1);
+}
+
 /* strings */
 static char* str(char *s) {
-  static int i,c;
-  static char *t[256];
+  static int i,c,m;
+  static char **t;
   for(i=0;i<c;i++) if(!strcmp(s,t[i])) return t[i];
+  if(c==m) {
+    m=m?m*2:1024;
+    t=realloc(t,sizeof(*t)*m);
+    if(!t) die("out of memory");
+  }
   t[c]=strdup(s);
+  if(!t[c]) die("out of memory");
   return t[c++];
 }
 
 /* nonterminals and terminals */
-static char *NT[256],*T[256];
+static char **NT,**T;
+static int NTM,TCM;
 static int NTC,TC;
-static int ist(char *s) { int i; for(i=0;i<TC;i++) if(s==T[i]) return 1; return 0; }
-static int isnt(char *s) { int i; for(i=0;i<NTC;i++) if(s==NT[i]) return 1; return 0; }
-static void addnt(char *s) { if(isnt(s)) return; NT[NTC++]=s; }
-static void addt(char *s) { if(isnt(s)) return; if(ist(s)) return; T[TC++]=s; }
+static int *NTH,*TH,NTHM,THM,mapsready;
+static int **NTR,*NTRN,*NTRM;
+
+static unsigned phash(char *s) {
+  uintptr_t p=(uintptr_t)s;
+  p^=p>>17;
+  p*=UINT64_C(0xed5ad4bb);
+  p^=p>>11;
+  return (unsigned)p;
+}
+
+static int mapfind(int *h, int m, char **v, char *s) {
+  unsigned p;
+  if(!m) return -1;
+  p=phash(s)&(unsigned)(m-1);
+  while(h[p]>=0) {
+    if(v[h[p]]==s) return h[p];
+    p=(p+1)&(unsigned)(m-1);
+  }
+  return -1;
+}
+
+static int ntindex(char *s) {
+  int i;
+  if(mapsready) return mapfind(NTH,NTHM,NT,s);
+  for(i=0;i<NTC;i++) if(s==NT[i]) return i;
+  return -1;
+}
+
+static int termindex(char *s) {
+  int i;
+  if(mapsready) return mapfind(TH,THM,T,s);
+  for(i=0;i<TC;i++) if(s==T[i]) return i;
+  return -1;
+}
+
+static int ist(char *s) { return termindex(s)>=0; }
+static int isnt(char *s) { return ntindex(s)>=0; }
+
+static void buildmap1(int **hp, int *mp, char **v, int n) {
+  int i,m=16;
+  unsigned p;
+  while(m<n*2) m*=2;
+  *hp=malloc(sizeof(**hp)*(size_t)m);
+  if(!*hp) die("out of memory");
+  *mp=m;
+  for(i=0;i<m;i++) (*hp)[i]=-1;
+  for(i=0;i<n;i++) {
+    p=phash(v[i])&(unsigned)(m-1);
+    while((*hp)[p]>=0) p=(p+1)&(unsigned)(m-1);
+    (*hp)[p]=i;
+  }
+}
+
+static void buildsymbolmaps() {
+  int i,n;
+  buildmap1(&NTH,&NTHM,NT,NTC);
+  buildmap1(&TH,&THM,T,TC);
+  mapsready=1;
+  NTR=calloc((size_t)NTC,sizeof(*NTR));
+  NTRN=calloc((size_t)NTC,sizeof(*NTRN));
+  NTRM=calloc((size_t)NTC,sizeof(*NTRM));
+  if(!NTR||!NTRN||!NTRM) die("out of memory");
+  for(i=0;i<RN;i++) {
+    n=ntindex(RA[i].lhs);
+    if(n<0) die("internal error: rule has an unknown left-hand side");
+    if(NTRN[n]==NTRM[n]) {
+      NTRM[n]=NTRM[n]?NTRM[n]*2:4;
+      NTR[n]=realloc(NTR[n],sizeof(*NTR[n])*NTRM[n]);
+      if(!NTR[n]) die("out of memory");
+    }
+    NTR[n][NTRN[n]++]=i;
+  }
+}
+
+static void addnt(char *s) {
+  if(isnt(s)) return;
+  if(NTC==NTM) {
+    NTM=NTM?NTM*2:256;
+    NT=realloc(NT,sizeof(*NT)*NTM);
+    if(!NT) die("out of memory");
+  }
+  NT[NTC++]=s;
+}
+static void addt(char *s) {
+  if(isnt(s)||ist(s)) return;
+  if(TC==TCM) {
+    TCM=TCM?TCM*2:256;
+    T=realloc(T,sizeof(*T)*TCM);
+    if(!T) die("out of memory");
+  }
+  T[TC++]=s;
+}
 
 /* leaf for eunitr */
-static char *LF[256];
-static int LFN;
+static char **LF;
+static int LFN,LFM;
 
 static int conflicts;
 static int eunitr;
+static int statebuilding;
+static int quiet;
 
 static int derives(char *a, char *b);
+static int sdeleted(int s);
+static void sorttrans();
+static void deduptrans();
 
 /* compact space */
 static void cs(char *s) {
@@ -78,6 +276,8 @@ static char* xfgets(char *s, int n, FILE *f) {
   char *r = fgets(s, n, f);
   if(r) {
     size_t len = strlen(s);
+    if(len==(size_t)n-1 && s[len-1]!='\n' && !feof(f))
+      die("grammar line is too long");
     if(len > 0 && (s[len-1] == '\n' || s[len-1] == '\r')) s[--len]=0;
     if(len > 0 && s[len-1] == '\r') s[--len]=0;
     cs(s);
@@ -85,11 +285,22 @@ static char* xfgets(char *s, int n, FILE *f) {
   return r;
 }
 
+static void striplinecomment(char *s) {
+  int quote=0;
+  for(;*s;s++) {
+    if(!quote) {
+      if(*s=='\''||*s=='"'||*s=='<') quote=*s=='<'?'>':*s;
+      else if(*s=='#'||(*s=='/'&&s[1]=='/')) { *s=0; return; }
+    }
+    else if(*s==quote) quote=0;
+  }
+}
+
 /* production in state */
 static int pins(int s, int r, int m, char **c, int cn) {
   int i,j;
-  for(i=0;i<N;i++) {
-    if(S[i]==s&&R[i]==r&&M[i]==m&&CN[i]==cn) {
+  for(i=SB[s];i<itemend(s);i++) {
+    if(R[i]==r&&M[i]==m&&CN[i]==cn) {
       for(j=0;j<cn;j++)
         if(C[i][j]!=c[j]) break;
       if(j==cn) return 1;
@@ -98,77 +309,186 @@ static int pins(int s, int r, int m, char **c, int cn) {
   return 0;
 }
 
+static int samecontext(int p, int q) {
+  int i,j;
+  if(CN[p]!=CN[q]) return 0;
+  for(i=0;i<CN[p];i++) {
+    for(j=0;j<CN[q];j++) if(C[p][i]==C[q][j]) break;
+    if(j==CN[q]) return 0;
+  }
+  return 1;
+}
+
+static uint64_t corehash(int s) {
+  int i;
+  uint64_t h=(uint64_t)SC[s]*UINT64_C(0x9e3779b97f4a7c15);
+  for(i=SB[s];i<itemend(s);i++) {
+    uint64_t x=((uint64_t)(unsigned)R[i]<<32)|(unsigned)M[i];
+    x^=x>>30;
+    x*=UINT64_C(0xbf58476d1ce4e5b9);
+    x^=x>>27;
+    x*=UINT64_C(0x94d049bb133111eb);
+    x^=x>>31;
+    h+=x;
+  }
+  return h;
+}
+
+static int samecore(int p, int q) {
+  int i,j;
+  if(SC[p]!=SC[q]) return 0;
+  for(i=SB[p];i<itemend(p);i++) {
+    for(j=SB[q];j<itemend(q);j++)
+      if(R[i]==R[j]&&M[i]==M[j]) break;
+    if(j==itemend(q)) return 0;
+  }
+  return 1;
+}
+
+static void statehashinsert(int s);
+
+static void statehashgrow() {
+  int i,m=SHM?SHM*2:1024,*old=SH,oldm=SHM;
+  SH=malloc(sizeof(*SH)*(size_t)m);
+  if(!SH) die("out of memory");
+  SHM=m;
+  SHN=0;
+  for(i=0;i<m;i++) SH[i]=-1;
+  for(i=0;i<oldm;i++) if(old[i]>=0) statehashinsert(old[i]);
+  free(old);
+}
+
+static void statehashinsert(int s) {
+  unsigned p;
+  if(!SHM||SHN*10>=SHM*7) statehashgrow();
+  p=(unsigned)corehash(s)&(unsigned)(SHM-1);
+  while(SH[p]>=0) p=(p+1)&(unsigned)(SHM-1);
+  SH[p]=s;
+  SHN++;
+}
+
+static int statehashfind(int s) {
+  unsigned p;
+  if(!SHM) return -1;
+  p=(unsigned)corehash(s)&(unsigned)(SHM-1);
+  while(SH[p]>=0) {
+    if(samecore(SH[p],s)) return SH[p];
+    p=(p+1)&(unsigned)(SHM-1);
+  }
+  return -1;
+}
+
 /* unique first righthand side */
 int ufrhs(int s, char **u) {
   int i,j,f,c=0;
   rule *rp;
-  for(i=0;i<N;i++) {
-    if(S[i]!=s) continue;
+  for(i=SB[s];i<itemend(s);i++) {
     rp=&RA[R[i]];
+    if(M[i]>=rp->rhsi) continue;
     for(f=0,j=0;j<c;j++) if(u[j]==rp->rhs[M[i]]) f=1;
-    if(!f) u[c++]=rp->rhs[M[i]];
+    if(!f) {
+      u[c++]=rp->rhs[M[i]];
+    }
   }
   return c;
 }
 
 /* first() */
-static char *FK[256];
-static char *FV[256][32];
-static int FC[256];
+static char **FK;
+static char ***FV;
+static int *FC,*FM;
 static int FN;
-static char *F[256];
+static char **F;
+static int FMEM;
 static int firsti(char *p) {
-  int i;
-  for(i=0;i<FN;i++) if(p==FK[i]) return i;
+  int i=termindex(p);
+  if(i>=0) return i;
+  i=ntindex(p);
+  if(i>=0) return TC+i;
   return -1;
 }
 static int infirst(char *p, char *q) {
   int i,j;
   i=firsti(p);
+  if(i<0) return 0;
   for(j=0;j<FC[i];j++) if(q==FV[i][j]) return 1;
   return 0;
 }
+static int addfirst(int i, char *p) {
+  int j;
+  for(j=0;j<FC[i];j++) if(FV[i][j]==p) return 0;
+  if(FC[i]==FM[i]) {
+    FM[i]=FM[i]?FM[i]*2:4;
+    FV[i]=realloc(FV[i],sizeof(*FV[i])*FM[i]);
+    if(!FV[i]) die("out of memory");
+  }
+  FV[i][FC[i]++]=p;
+  return 1;
+}
 static void firstgen() {
-  int i,j,k,f=1,n,m,s;
+  int i,j,k,f=1,n,m,s,nullable;
   char *p,*q;
-  for(i=0;i<TC;i++) { FK[FN]=T[i]; FV[FN][FC[FN]++]=T[i]; FN++; }
+  FN=TC+NTC;
+  FK=calloc((size_t)FN,sizeof(*FK));
+  FV=calloc((size_t)FN,sizeof(*FV));
+  FC=calloc((size_t)FN,sizeof(*FC));
+  FM=calloc((size_t)FN,sizeof(*FM));
+  F=malloc(sizeof(*F)*(size_t)(FN+1));
+  FMEM=FN+1;
+  if(!FK||!FV||!FC||!FM||!F) die("out of memory");
+  FN=0;
+  for(i=0;i<TC;i++) {
+    FK[FN]=T[i];
+    addfirst(FN,T[i]);
+    FN++;
+  }
   for(i=0;i<NTC;i++) {
     FK[FN]=NT[i];
-    for(j=0;j<RN;j++) if(NT[i]==RA[j].lhs && !RA[j].rhsi) FV[FN][FC[FN]++]=0;
+    for(j=0;j<RN;j++)
+      if(NT[i]==RA[j].lhs && !RA[j].rhsi) addfirst(FN,0);
     ++FN;
   }
   while(f) {
     f=0;
-    for(i=0;i<NTC;i++) {
-      p=NT[i];
-      for(j=0;j<RN;j++) {
-        if(p!=RA[j].lhs) continue;
-        n=firsti(p);
-        for(k=0;k<RA[j].rhsi;k++) {
-          q=RA[j].rhs[k];
-          m=firsti(q);
-          for(s=0;s<FC[m];s++) if(!infirst(p,FV[m][s])) { FV[n][FC[n]++]=FV[m][s]; f=1; }
-          if(!infirst(q,0)) break;
-        }
+    for(j=0;j<RN;j++) {
+      p=RA[j].lhs;
+      n=firsti(p);
+      nullable=1;
+      for(k=0;k<RA[j].rhsi;k++) {
+        q=RA[j].rhs[k];
+        m=firsti(q);
+        if(m<0) die("internal error: symbol has no FIRST set");
+        for(s=0;s<FC[m];s++)
+          if(FV[m][s] && addfirst(n,FV[m][s])) f=1;
+        if(!infirst(q,0)) { nullable=0; break; }
       }
+      if(nullable && addfirst(n,0)) f=1;
     }
   }
 }
-static int first(char **p, int c) {
-  int i,j,n,k=0,b=0,m;
-  if(!c) { F[k++]=0; return k; } /* empty */
-  for(i=0;i<c;i++) {
-    if(ist(p[i])) { F[k++]=p[i]; return k; }
-    n=firsti(p[i]);
-    for(j=0;j<FC[n];j++) {
-      if(!FV[n][j]) { F[k++]=0; b=1; }
-      else {
-        for(m=0;m<k;m++) if(F[m]==FV[n][j]) break;
-        if(m==k) F[k++]=FV[n][j];
-      }
-    }
-    if(!b) break;
+static int addf(char *p, int *k) {
+  int i;
+  for(i=0;i<*k;i++) if(F[i]==p) return 0;
+  if(*k==FMEM) {
+    FMEM*=2;
+    F=realloc(F,sizeof(*F)*FMEM);
+    if(!F) die("out of memory");
   }
+  F[(*k)++]=p;
+  return 1;
+}
+static int first(char **p, int c) {
+  int i,j,n,k=0,nullable=1;
+  if(!c) { F[k++]=0; return k; }
+  for(i=0;i<c;i++) {
+    n=firsti(p[i]);
+    if(n<0) die("internal error: symbol has no FIRST set");
+    for(j=0;j<FC[n];j++) {
+      if(FV[n][j]) addf(FV[n][j],&k);
+    }
+    if(!infirst(p[i],0)) { nullable=0; break; }
+  }
+  if(nullable) addf(0,&k);
   return k;
 }
 void pgprintfirst() {
@@ -177,65 +497,54 @@ void pgprintfirst() {
     if(ist(FK[i])) continue;
     if(FK[i]==str("$a")) continue;
     printf("first(%s) =",FK[i]);
-    for(j=0;j<FC[i];j++) printf(" %s",FV[i][j]);
+    for(j=0;j<FC[i];j++) printf(" %s",FV[i][j]?FV[i][j]:"<empty>");
     printf("\n");
   }
 }
 
 /* follow() */
-static char *AK[256];
-static char *AV[256][32];
-static int AC[256];
+static char **AK;
+static char ***AV;
+static int *AC,*AM;
 static int followi(char *p) {
-  int i;
-  for(i=0;i<NTC;i++) if(p==AK[i]) return i;
-  return -1;
+  return ntindex(p);
 }
-static int infollow(char *p, char *q) {
-  int i,j;
-  i=followi(p);
-  for(j=0;j<AC[i];j++) if(q==AV[i][j]) return 1;
-  return 0;
+static int addfollow(int i, char *p) {
+  int j;
+  for(j=0;j<AC[i];j++) if(AV[i][j]==p) return 0;
+  if(AC[i]==AM[i]) {
+    AM[i]=AM[i]?AM[i]*2:4;
+    AV[i]=realloc(AV[i],sizeof(*AV[i])*AM[i]);
+    if(!AV[i]) die("out of memory");
+  }
+  AV[i][AC[i]++]=p;
+  return 1;
 }
 static void followgen() {
-  int i,j,k,n,s,m,f=1;
-  char *p;
-  for(i=1;i<NTC;i++) AK[i]=NT[i];
-  AV[1][0]=str("$e");
-  AC[1]=1;
-  for(i=1;i<NTC;i++) {
-    p=NT[i];
-    for(j=0;j<RN;j++) {
-      for(k=0;k<RA[j].rhsi;k++) {
-        if(p!=RA[j].rhs[k]) continue;
-        if(k==RA[j].rhsi-1) continue;
-        /* A > aBb : add first(b) to follow(B) */
-        n=first(&RA[j].rhs[k+1],RA[j].rhsi-k-1);
-        m=followi(p);
-        for(s=0;s<n;s++) if(F[s] && !infollow(p,F[s])) AV[m][AC[m]++]=F[s];
-      }
-    }
-  }
+  int i,j,k,n,s,m,a,f=1,nullable;
+  AK=malloc(sizeof(*AK)*(size_t)NTC);
+  AV=calloc((size_t)NTC,sizeof(*AV));
+  AC=calloc((size_t)NTC,sizeof(*AC));
+  AM=calloc((size_t)NTC,sizeof(*AM));
+  if(!AK||!AV||!AC||!AM) die("out of memory");
+  for(i=0;i<NTC;i++) AK[i]=NT[i];
+  if(NTC>0) addfollow(0,str("$e"));
+  if(NTC>1) addfollow(1,str("$e"));
   while(f) {
     f=0;
-    for(i=1;i<NTC;i++) {
-      p=NT[i];
-      for(j=0;j<RN;j++) {
-        for(k=0;k<RA[j].rhsi;k++) {
-          if(p!=RA[j].rhs[k]) continue;
-          if(k==RA[j].rhsi-1); /* A > aB */
-          else { /* A > aBb */
-            n=first(&RA[j].rhs[k+1],RA[j].rhsi-k-1);
-            for(s=0;s<n;s++) if(!F[s]) break;
-            if(s==n) continue;
-          }
-          /* add follow(A) to follow(B) */
-          n=followi(RA[j].lhs);
-          m=followi(p);
-          if(n<0) continue;
-          for(s=0;s<AC[n];s++)
-            if(!infollow(p,AV[n][s])) { AV[m][AC[m]++]=AV[n][s]; f=1; }
+    for(j=0;j<RN;j++) {
+      a=followi(RA[j].lhs);
+      for(k=0;k<RA[j].rhsi;k++) {
+        m=followi(RA[j].rhs[k]);
+        if(m<0) continue;
+        n=first(&RA[j].rhs[k+1],RA[j].rhsi-k-1);
+        nullable=0;
+        for(s=0;s<n;s++) {
+          if(!F[s]) nullable=1;
+          else if(addfollow(m,F[s])) f=1;
         }
+        if(nullable && a>=0)
+          for(s=0;s<AC[a];s++) if(addfollow(m,AV[a][s])) f=1;
       }
     }
   }
@@ -250,90 +559,109 @@ void pgprintfollow() {
   printf("\n");
 }
 
-static void propagatectx(int s, int r, int m) {
-  int i,j,k,u=0;
-  char *n=RA[r].rhs[m];
-  for(i=0;i<N;i++) {
-    if(S[i]!=s||R[i]!=r||M[i]!=m) continue;
-    for(j=i+1;j<N;j++) {
-      if(S[j]!=s) continue;
-      if(n==RA[R[j]].lhs) {
-        for(k=0;k<CN[i];k++) {
-          for(m=0;m<CN[j];m++) if(C[i][k]==C[j][m]) break;
-          if(m==CN[j]) { C[j][CN[j]++]=C[i][k]; u=1; }
-        }
-        if(u) { propagatectx(s,R[j],0); u=0; }
-      }
-    }
-  }
-}
-
 static void add2state0(int s, int r, int m) {
   int i;
-  for(i=0;i<N;i++) if(S[i]==s&&R[i]==r&&M[i]==m) break;
-  if(i!=N) return;
+  ensurestates(s+1);
+  for(i=SB[s];i<itemend(s);i++) if(R[i]==r&&M[i]==m) break;
+  if(i!=itemend(s)) return;
+  checkitem();
   S[N]=s;
   R[N]=r;
   M[N++]=m;
+  SC[s]++;
 }
 
-static void add2state1(int s, int r, int m, char **c, int cn) {
+static int add2state1(int s, int r, int m, char **c, int cn) {
   int i=0,j,k,u=0;
-  for(i=0;i<N;i++) {
-    if(S[i]!=s||R[i]!=r||M[i]!=m) continue;
+  ensurestates(s+1);
+  for(i=SB[s];i<itemend(s);i++) {
+    if(R[i]!=r||M[i]!=m) continue;
     for(j=0;j<cn;j++) {
       for(k=0;k<CN[i];k++) if(C[i][k]==c[j]) break;
-      if(k==CN[i]) { C[i][CN[i]++]=c[j]; u=1; }
+      if(k==CN[i]) {
+        ensurecontext(i,CN[i]+1);
+        C[i][CN[i]++]=c[j];
+        u=1;
+      }
     }
-    if(u) { propagatectx(s,r,m); }
-    return;
+    return u;
   }
+  checkitem();
   S[N]=s;
   R[N]=r;
   M[N]=m;
+  ensurecontext(N,cn);
   for(i=0;i<cn;i++) C[N][i]=c[i];
   CN[N]=cn;
   N++;
+  SC[s]++;
+  return 1;
 }
 
 static void closure0(int s) {
-  int i,j,k,c;
-  char *u[128];
+  int i,j,k,c,ni,x;
+  char **u=malloc(sizeof(*u)*(size_t)(NTC+TC));
   rule *rp;
+  if(!u) die("out of memory");
   c=ufrhs(s,u);
   for(i=0;i<c;i++) {
-    if(ist(u[i])) continue;
-    for(j=0;j<RN;j++) {
+    ni=ntindex(u[i]);
+    if(ni<0) continue;
+    for(x=0;x<NTRN[ni];x++) {
+      j=NTR[ni][x];
       rp=&RA[j];
-      if(u[i]!=rp->lhs) continue;
       if(pins(s,j,0,0,0)) continue;
       add2state0(s,j,0);
-      if(isnt(rp->rhs[0])) {
+      if(rp->rhsi&&isnt(rp->rhs[0])) {
         for(k=0;k<c;k++) if(u[k]==rp->rhs[0]) break;
         if(k==c) u[c++]=rp->rhs[0];
       }
     }
   }
+  free(u);
 }
 
 static void closure1(int s) {
-  int i,j,k,b;
+  int i,j,k,l,ctn,ln,changed=1,maxrhs=0,ni,x;
   rule *r0;
-  char *ctx[32],*n;
-  int ctn=0;
-  for(i=0;i<N;i++,ctn=0) {
-    if(S[i]!=s) continue;
-    r0=&RA[R[i]];
-    if(r0->rhsi==M[i]||ist(r0->rhs[M[i]])) continue;
-    for(j=M[i]+1;j<r0->rhsi;j++) ctx[ctn++]=r0->rhs[j];
-    for(j=0;j<CN[i];j++) ctx[ctn++]=C[i][j];
-    n=RA[R[i]].rhs[M[i]];
-    if((b=M[i]+1!=r0->rhsi)) k=first(ctx,ctn);
-    for(j=0;j<RN;j++) {
-      if(RA[j].lhs!=n) continue;
-      add2state1(s,j,0,b?F:ctx,b?k:ctn);
+  char **ctx,**look,*n;
+  for(i=0;i<RN;i++) if(maxrhs<RA[i].rhsi) maxrhs=RA[i].rhsi;
+  ctx=malloc(sizeof(*ctx)*(size_t)(maxrhs+1));
+  look=malloc(sizeof(*look)*(size_t)(TC+1));
+  if(!ctx||!look) die("out of memory");
+  while(changed) {
+    changed=0;
+    for(i=SB[s];i<itemend(s);i++) {
+      r0=&RA[R[i]];
+      if(r0->rhsi==M[i]||ist(r0->rhs[M[i]])) continue;
+      n=RA[R[i]].rhs[M[i]];
+      ln=0;
+      if(M[i]+1==r0->rhsi) {
+        for(j=0;j<CN[i];j++) look[ln++]=C[i][j];
+      }
+      else {
+        for(j=0;j<CN[i];j++) {
+          ctn=0;
+          for(k=M[i]+1;k<r0->rhsi;k++) ctx[ctn++]=r0->rhs[k];
+          ctx[ctn++]=C[i][j];
+          k=first(ctx,ctn);
+          for(l=0;l<k;l++) {
+            if(!F[l]) continue;
+            for(ctn=0;ctn<ln;ctn++) if(look[ctn]==F[l]) break;
+            if(ctn==ln) look[ln++]=F[l];
+          }
+        }
+      }
+      ni=ntindex(n);
+      if(ni<0) continue;
+      for(x=0;x<NTRN[ni];x++) {
+        j=NTR[ni][x];
+        if(add2state1(s,j,0,look,ln)) changed=1;
+      }
     }
   }
+  free(ctx);
+  free(look);
 }
 
 static void closure(int s) {
@@ -341,7 +669,7 @@ static void closure(int s) {
   else closure0(s);
 }
 
-static char esc[256];
+static char esc[2048];
 static char* escape(char *s) {
   int i,j=0,n;
   if(!s) return 0;
@@ -369,65 +697,93 @@ static void printmp(int r, int m, char **c, int cn) {
   }
 }
 
+static int samekind(int a, int b) {
+  return (a==2)==(b==2);
+}
+
+static void printaction(int a, int g, int r) {
+  if(a==0) printf("reduce %d (%s)",r,RA[r].r);
+  else if(a==1) printf("shift %d",g);
+  else printf("goto %d",g);
+}
+
 static void addtrans(int s, char *t, int a, int g, int r, int m) {
-  int i;
-  for(i=0;i<TN;i++) {
-    if(TS[i]!=s||TT[i]!=t) continue;
-    if(a==0&&TA[i]==0&&TR[i]&&TR[i]!=r) {
-      printf("warning: reduce/reduce conflict state[%d] token[%s]\n",s,t);
-      printf("         %d. ",TR[i]); printmp(TR[i],TM[i],C[i],CN[i]); printf("\n");
-      printf("         %d. ",r); printmp(r,m,C[i],CN[i]); printf("\n");
+  int i,b=0;
+  if(statebuilding) {
+    b=TN;
+    while(b>0&&TS[b-1]==s) b--;
+  }
+  for(i=b;i<TN;i++) {
+    if(TD[i]||TS[i]!=s||TT[i]!=t||!samekind(TA[i],a)) continue;
+    if(a==0&&TA[i]==0&&TR[i]==r) return;
+    if((a==1||a==2)&&TA[i]==a&&TG[i]==g) return;
+    if(a==2||TA[i]==2) {
+      if(!quiet) {
+        printf("warning: goto conflict state[%d] token[%s]: ",s,t);
+        printaction(TA[i],TG[i],TR[i]);
+        printf(" / ");
+        printaction(a,g,r);
+        printf("\n");
+      }
       conflicts++;
       return;
     }
-    else if(a==0&&TA[i]==1) {
+    if(a==1&&TA[i]==1) {
+      if(!quiet)
+        printf("warning: shift/shift conflict state[%d] token[%s]: s%d / s%d\n",
+               s,t,TG[i],g);
+      conflicts++;
+      return;
+    }
+    if(a==0&&TA[i]==0) {
+      if(!quiet) {
+        printf("warning: reduce/reduce conflict state[%d] token[%s]\n",s,t);
+        printf("         "); printaction(TA[i],TG[i],TR[i]); printf("\n");
+        printf("         "); printaction(a,g,r); printf("\n");
+      }
+      conflicts++;
+      if(r<TR[i]) { TR[i]=r; TM[i]=m; }
+      return;
+    }
+    if(!quiet) {
       printf("warning: shift/reduce conflict state[%d] token[%s]\n",s,t);
-      printf("         %d. ",TR[i]); printmp(TR[i],TM[i],C[i],CN[i]); printf("\n");
-      printf("         %d. ",r); printmp(r,m,C[i],CN[i]); printf("\n");
-      conflicts++;
-      return;
+      printf("         "); printaction(TA[i],TG[i],TR[i]); printf("\n");
+      printf("         "); printaction(a,g,r); printf("\n");
     }
-    else if(a==1&&TA[i]==0) ; /* overwrite default reduce follow() entries */
-    else if(a==1&&TA[i]==1) return; /* just leave first shift rule. TODO?*/
-    else { /* a==2 */ }
-    TA[i]=a;
-    TG[i]=g;
-    TR[i]=r;
-    TM[i]=m;
+    conflicts++;
+    if(a==1) {
+      TA[i]=a;
+      TG[i]=g;
+      TR[i]=r;
+      TM[i]=m;
+    }
     return;
   }
-  for(i=0;i<TN;i++) if(TS[i]==s&&TT[i]==t) return;
+  checktrans();
   TS[TN]=s;
   TT[TN]=t;
   TA[TN]=a;
   TG[TN]=g;
   TR[TN]=r;
-  TM[TN++]=m;
+  TM[TN]=m;
+  TD[TN++]=0;
 }
 
 static void goto0(int s, char *p) {
-  int i,j,k,f=0,b,c=0;
-  char *rs,*nta[128];
+  int i,j,f=0,b,c=0;
+  char *rs,**nta=malloc(sizeof(*nta)*(size_t)(NTC+TC));
   rule *rp;
+  if(!nta) die("out of memory");
   GN=N; /* in case this state is not added */
   GTN=TN; /* in case this state is not added */
-  for(i=0;i<N;i++) {
-    if(S[i]!=s) continue;
+  ensurestates(SN+1);
+  SB[SN]=GN;
+  SC[SN]=0;
+  for(i=SB[s];i<itemend(s);i++) {
     rp=&RA[R[i]];
+    if(M[i]>=rp->rhsi) continue;
     rs=rp->rhs[M[i]];
-    if(rp->rhsi==M[i]) { /* default reduce rule */
-      if(gmode==SLR) {
-        addtrans(s,rs?rs:str("$e"),0,0,R[i],M[i]);
-        j=followi(rp->lhs);
-        if(j!=-1) for(k=0;k<AC[j];k++) addtrans(s,AV[j][k],0,0,R[i],M[i]);
-      }
-      else if(gmode==LR0) {
-        if(!R[i]) addtrans(s,str("$e"),0,0,R[i],M[i]);
-        else for(j=0;j<TC;j++) addtrans(s,T[j],0,0,R[i],M[i]);
-      }
-      continue;
-    }
-    else if(p==rs) {
+    if(p==rs) {
       if(pins(SN,R[i],M[i],0,0)) continue;
       f=1;
       add2state0(SN,R[i],M[i]+1);
@@ -440,23 +796,24 @@ static void goto0(int s, char *p) {
     }
   }
   if(f) closure(SN);
+  free(nta);
 }
 
 static void goto1(int s, char *p) {
   int i,j,f=0,b,c=0;
-  char *rs,*nta[128];
+  char *rs,**nta=malloc(sizeof(*nta)*(size_t)(NTC+TC));
   rule *rp;
+  if(!nta) die("out of memory");
   GN=N; /* in case this state is not added */
   GTN=TN; /* in case this state is not added */
-  for(i=0;i<N;i++) {
-    if(S[i]!=s) continue;
+  ensurestates(SN+1);
+  SB[SN]=GN;
+  SC[SN]=0;
+  for(i=SB[s];i<itemend(s);i++) {
     rp=&RA[R[i]];
+    if(M[i]>=rp->rhsi) continue;
     rs=rp->rhs[M[i]];
-    if(rp->rhsi==M[i]) { /* default reduce rule */
-      for(j=0;j<CN[i];j++) /* for any lookahead */
-        addtrans(s,C[i][j],0,0,R[i],M[i]);
-    }
-    else if(p==rs) {
+    if(p==rs) {
       if(pins(SN,R[i],M[i]+1,C[i],CN[i])) continue;
       f=1;
       add2state1(SN,R[i],M[i]+1,C[i],CN[i]);
@@ -469,6 +826,29 @@ static void goto1(int s, char *p) {
     }
   }
   if(f) closure(SN);
+  free(nta);
+}
+
+static void addreductions(int s) {
+  int i,j,k;
+  for(i=SB[s];i<itemend(s);i++) {
+    if(M[i]!=RA[R[i]].rhsi) continue;
+    if(gmode==LR1||gmode==LALR) {
+      for(j=0;j<CN[i];j++) addtrans(s,C[i][j],0,0,R[i],M[i]);
+    }
+    else if(gmode==SLR) {
+      if(!R[i]) addtrans(s,str("$e"),0,0,R[i],M[i]);
+      else {
+        k=followi(RA[R[i]].lhs);
+        if(k>=0) for(j=0;j<AC[k];j++)
+          addtrans(s,AV[k][j],0,0,R[i],M[i]);
+      }
+    }
+    else if(gmode==LR0) {
+      if(!R[i]) addtrans(s,str("$e"),0,0,R[i],M[i]);
+      else for(j=0;j<TC;j++) addtrans(s,T[j],0,0,R[i],M[i]);
+    }
+  }
 }
 
 static char* split(char *p, char c, char **q) {
@@ -495,29 +875,41 @@ static char* split(char *p, char c, char **q) {
 /* star plus question cond */
 static void spqc(char *q, char *s, char m) {
   char *t,*z,*u,*v;
+  int n;
   if(!s) return;
   t=strdup(s);
+  if(!t) die("out of memory");
   u=split(t,' ',&z);
   while(u) {
     if(1<strlen(u) && u[strlen(u)-1]==m) {
       v=strdup(u);
+      if(!v) die("out of memory");
       v[strlen(v)-1]=0;
+      ensurerules(RN+2);
       switch(m) {
       case '*':
-        sprintf(RA[RN++].r,"%s %s",u,q);
-        sprintf(RA[RN++].r,"%s %s %s %s",u,q,u,v);
+        n=snprintf(RA[RN++].r,sizeof(RA[0].r),"%s %s",u,q);
+        if(n<0||n>=(int)sizeof(RA[0].r)) die("expanded rule is too long");
+        n=snprintf(RA[RN++].r,sizeof(RA[0].r),"%s %s %s %s",u,q,u,v);
+        if(n<0||n>=(int)sizeof(RA[0].r)) die("expanded rule is too long");
         break;
       case '+':
-        sprintf(RA[RN++].r,"%s %s %s",u,q,v);
-        sprintf(RA[RN++].r,"%s %s %s %s",u,q,u,v);
+        n=snprintf(RA[RN++].r,sizeof(RA[0].r),"%s %s %s",u,q,v);
+        if(n<0||n>=(int)sizeof(RA[0].r)) die("expanded rule is too long");
+        n=snprintf(RA[RN++].r,sizeof(RA[0].r),"%s %s %s %s",u,q,u,v);
+        if(n<0||n>=(int)sizeof(RA[0].r)) die("expanded rule is too long");
         break;
       case '?':
-        sprintf(RA[RN++].r,"%s %s",u,q);
-        sprintf(RA[RN++].r,"%s %s %s",u,q,v);
+        n=snprintf(RA[RN++].r,sizeof(RA[0].r),"%s %s",u,q);
+        if(n<0||n>=(int)sizeof(RA[0].r)) die("expanded rule is too long");
+        n=snprintf(RA[RN++].r,sizeof(RA[0].r),"%s %s %s",u,q,v);
+        if(n<0||n>=(int)sizeof(RA[0].r)) die("expanded rule is too long");
         break;
       case ']':
-        sprintf(RA[RN++].r,"%s %s",u,q);
-        sprintf(RA[RN++].r,"%s %s %s",u,q,v+1);
+        n=snprintf(RA[RN++].r,sizeof(RA[0].r),"%s %s",u,q);
+        if(n<0||n>=(int)sizeof(RA[0].r)) die("expanded rule is too long");
+        n=snprintf(RA[RN++].r,sizeof(RA[0].r),"%s %s %s",u,q,v+1);
+        if(n<0||n>=(int)sizeof(RA[0].r)) die("expanded rule is too long");
         break;
       }
       cs(RA[RN-2].r);
@@ -528,26 +920,378 @@ static void spqc(char *q, char *s, char m) {
   }
   free(t);
 }
-static char arules[10240];
+static char *arules;
+static size_t arulesn,arulesm;
+static void appendgrammar(char *s) {
+  size_t n=strlen(s);
+  if(arulesn+n+2>arulesm) {
+    size_t m=arulesm?arulesm:1024;
+    while(arulesn+n+2>m) m*=2;
+    arules=realloc(arules,m);
+    if(!arules) die("out of memory");
+    arulesm=m;
+  }
+  memcpy(arules+arulesn,s,n);
+  arulesn+=n;
+  arules[arulesn++]='\n';
+  arules[arulesn]=0;
+}
+
+enum {
+  EN_SYMBOL,
+  EN_SEQUENCE,
+  EN_ALTERNATIVE,
+  EN_OPTIONAL,
+  EN_ZERO_MORE,
+  EN_ONE_MORE
+};
+
+#define EBT_SYMBOL 256
+
+typedef struct enode {
+  int kind;
+  char *text;
+  struct enode **child;
+  int n, m;
+} enode;
+
+typedef struct {
+  char **v;
+  int n, m;
+} wordvec;
+
+typedef struct {
+  char *lhs;
+  char *op;
+  wordvec rhs;
+} eproduction;
+
+typedef struct {
+  eproduction *v;
+  int n, m;
+} prodvec;
+
+static char *ebp,*ebtext;
+static int ebtok,ebline,ebhelper;
+static char *ebfile;
+static char **ebnames;
+static int ebnamesn,ebnamesm;
+
+static void eberror(char *s) {
+  fprintf(stderr,"error: %s:%d: %s\n",ebfile,ebline,s);
+  exit(1);
+}
+
+static enode *enew(int kind) {
+  enode *n=calloc(1,sizeof(*n));
+  if(!n) die("out of memory");
+  n->kind=kind;
+  return n;
+}
+
+static void echild(enode *n, enode *c) {
+  if(n->n==n->m) {
+    n->m=n->m?n->m*2:4;
+    n->child=realloc(n->child,sizeof(*n->child)*n->m);
+    if(!n->child) die("out of memory");
+  }
+  n->child[n->n++]=c;
+}
+
+static void ebnext() {
+  char *s,*p;
+  int quote=0;
+  free(ebtext);
+  ebtext=0;
+  while(*ebp&&isblank((unsigned char)*ebp)) ebp++;
+  if(!*ebp) { ebtok=0; return; }
+  if(strchr("()|*+?",*ebp)) { ebtok=*ebp++; return; }
+  s=ebp;
+  if(*ebp=='\''||*ebp=='"'||*ebp=='<') {
+    quote=*ebp=='<'?'>':*ebp;
+    ebp++;
+    while(*ebp&&*ebp!=quote) ebp++;
+    if(!*ebp) eberror("unterminated quoted grammar symbol");
+    ebp++;
+  }
+  else {
+    while(*ebp&&!isblank((unsigned char)*ebp)&&!strchr("()|*+?",*ebp)) ebp++;
+  }
+  p=malloc((size_t)(ebp-s)+1);
+  if(!p) die("out of memory");
+  memcpy(p,s,(size_t)(ebp-s));
+  p[ebp-s]=0;
+  ebtext=p;
+  ebtok=EBT_SYMBOL;
+}
+
+static enode *ebalternatives();
+
+static enode *ebprimary() {
+  enode *n,*p;
+  if(ebtok==EBT_SYMBOL) {
+    n=enew(EN_SYMBOL);
+    n->text=strdup(ebtext);
+    if(!n->text) die("out of memory");
+    ebnext();
+  }
+  else if(ebtok=='(') {
+    ebnext();
+    n=ebalternatives();
+    if(ebtok!=')') eberror("expected ')' in EBNF expression");
+    ebnext();
+  }
+  else eberror("expected a grammar symbol or '('");
+  if(ebtok=='*'||ebtok=='+'||ebtok=='?') {
+    p=enew(ebtok=='*'?EN_ZERO_MORE:ebtok=='+'?EN_ONE_MORE:EN_OPTIONAL);
+    echild(p,n);
+    n=p;
+    ebnext();
+  }
+  return n;
+}
+
+static enode *ebsequence() {
+  enode *n=enew(EN_SEQUENCE);
+  while(ebtok&&ebtok!='|'&&ebtok!=')') echild(n,ebprimary());
+  if(n->n==1) {
+    enode *p=n->child[0];
+    free(n->child);
+    free(n);
+    return p;
+  }
+  return n;
+}
+
+static enode *ebalternatives() {
+  enode *n=enew(EN_ALTERNATIVE),*p;
+  echild(n,ebsequence());
+  while(ebtok=='|') {
+    ebnext();
+    echild(n,ebsequence());
+  }
+  if(n->n==1) {
+    p=n->child[0];
+    free(n->child);
+    free(n);
+    return p;
+  }
+  return n;
+}
+
+static void efree(enode *n) {
+  int i;
+  if(!n) return;
+  for(i=0;i<n->n;i++) efree(n->child[i]);
+  free(n->child);
+  free(n->text);
+  free(n);
+}
+
+static void wadd(wordvec *w, char *s) {
+  if(w->n==w->m) {
+    w->m=w->m?w->m*2:8;
+    w->v=realloc(w->v,sizeof(*w->v)*w->m);
+    if(!w->v) die("out of memory");
+  }
+  w->v[w->n++]=s;
+}
+
+static eproduction *padd(prodvec *p, char *lhs, char *op) {
+  eproduction *r;
+  if(p->n==p->m) {
+    p->m=p->m?p->m*2:8;
+    p->v=realloc(p->v,sizeof(*p->v)*p->m);
+    if(!p->v) die("out of memory");
+  }
+  r=&p->v[p->n++];
+  memset(r,0,sizeof(*r));
+  r->lhs=lhs;
+  r->op=op;
+  return r;
+}
+
+static char *ematerialize(enode *n, char *op, prodvec *extra);
+
+static void ewords(enode *n, char *op, prodvec *extra, wordvec *w) {
+  int i;
+  if(n->kind==EN_SYMBOL) { wadd(w,n->text); return; }
+  if(n->kind==EN_SEQUENCE) {
+    for(i=0;i<n->n;i++) ewords(n->child[i],op,extra,w);
+    return;
+  }
+  wadd(w,ematerialize(n,op,extra));
+}
+
+static void evariants(prodvec *p, char *lhs, char *op, enode *n,
+                      char *prefix, prodvec *extra) {
+  int i;
+  eproduction *r;
+  wordvec w={0};
+  if(n->kind==EN_ALTERNATIVE) {
+    for(i=0;i<n->n;i++) evariants(p,lhs,op,n->child[i],prefix,extra);
+    return;
+  }
+  if(prefix) wadd(&w,prefix);
+  ewords(n,op,extra,&w);
+  r=padd(p,lhs,op);
+  r->rhs=w;
+}
+
+static char *ematerialize(enode *n, char *op, prodvec *extra) {
+  char b[64],*name;
+  snprintf(b,sizeof(b),"$ebnf%d",++ebhelper);
+  name=strdup(b);
+  if(!name) die("out of memory");
+  if(ebnamesn==ebnamesm) {
+    ebnamesm=ebnamesm?ebnamesm*2:16;
+    ebnames=realloc(ebnames,sizeof(*ebnames)*ebnamesm);
+    if(!ebnames) die("out of memory");
+  }
+  ebnames[ebnamesn++]=name;
+  if(n->kind==EN_OPTIONAL) {
+    padd(extra,name,op);
+    evariants(extra,name,op,n->child[0],0,extra);
+  }
+  else if(n->kind==EN_ZERO_MORE) {
+    padd(extra,name,op);
+    evariants(extra,name,op,n->child[0],name,extra);
+  }
+  else if(n->kind==EN_ONE_MORE) {
+    evariants(extra,name,op,n->child[0],0,extra);
+    evariants(extra,name,op,n->child[0],name,extra);
+  }
+  else evariants(extra,name,op,n,0,extra);
+  return name;
+}
+
+static void eaddproduction(eproduction *p) {
+  int i,n;
+  size_t used;
+  ensurerules(RN+1);
+  n=snprintf(RA[RN].r,sizeof(RA[RN].r),"%s %s",p->lhs,p->op);
+  if(n<0||n>=(int)sizeof(RA[RN].r)) die("expanded rule is too long");
+  used=(size_t)n;
+  for(i=0;i<p->rhs.n;i++) {
+    n=snprintf(RA[RN].r+used,sizeof(RA[RN].r)-used," %s",p->rhs.v[i]);
+    if(n<0||(size_t)n>=sizeof(RA[RN].r)-used) die("expanded rule is too long");
+    used+=(size_t)n;
+  }
+  RN++;
+}
+
+static void compileebnf(char *lhs, char *op, char *rhs, char *file, int line) {
+  int i;
+  enode *n;
+  prodvec main={0},extra={0};
+  ebp=rhs;
+  ebfile=file;
+  ebline=line;
+  ebnext();
+  n=ebalternatives();
+  if(ebtok) eberror("unexpected token in EBNF expression");
+  evariants(&main,lhs,op,n,0,&extra);
+  for(i=0;i<main.n;i++) eaddproduction(&main.v[i]);
+  for(i=0;i<extra.n;i++) eaddproduction(&extra.v[i]);
+  for(i=0;i<main.n;i++) free(main.v[i].rhs.v);
+  for(i=0;i<extra.n;i++) free(extra.v[i].rhs.v);
+  free(main.v);
+  free(extra.v);
+  efree(n);
+  for(i=0;i<ebnamesn;i++) free(ebnames[i]);
+  free(ebnames);
+  ebnames=0;
+  ebnamesn=ebnamesm=0;
+  free(ebtext);
+  ebtext=0;
+}
+
+static void appendtext(char **p, size_t *n, size_t *m, char *s) {
+  size_t z=strlen(s);
+  if(*n+z+2>*m) {
+    size_t c=*m?*m:256;
+    while(*n+z+2>c) c*=2;
+    *p=realloc(*p,c);
+    if(!*p) die("out of memory");
+    *m=c;
+  }
+  if(*n) (*p)[(*n)++]=' ';
+  memcpy(*p+*n,s,z+1);
+  *n+=z;
+}
+
 void pgread(char *g) {
   FILE *fp;
-  char b[1024],p[256],q[256],r[1024],*s,*z;
+  char b[1024],h[1024],p[256]={0},q[256]={0},r[1024],*s,*z,*lhs,*op;
+  char *pending=0,plhs[256]={0},pop[256]={0};
+  size_t pendingn=0,pendingm=0;
+  int havehead=0,n,line=0,pline=0;
+  ensurerules(1);
   if(!(fp=fopen(g,"r"))) { fprintf(stderr,"error: file not found\n"); exit(1); }
   while(xfgets(b,1024,fp)) {
-    strcat(arules,b); strcat(arules,"\n");
+    line++;
+    appendgrammar(b);
     if(!*b) continue;
-    if('#'==*b) continue;
-    split(b,'#',&z);
+    striplinecomment(b);
     cs(b);
-    if('|'==*b) strcpy(r,b+1);
+    if(!*b) continue;
+    strcpy(h,b);
+    lhs=split(h,' ',&z);
+    op=split(0,' ',&z);
+    if(pending) {
+      if(lhs&&op&&!strcmp(op,"::=")) {
+        compileebnf(plhs,pop,pending,g,pline);
+        free(pending);
+        pending=0;
+        pendingn=pendingm=0;
+      }
+      else {
+        appendtext(&pending,&pendingn,&pendingm,b);
+        continue;
+      }
+    }
+    if(lhs&&op&&!strcmp(op,"::=")&&(!z||!*z)) {
+      if(strlen(lhs)>=sizeof(plhs)||strlen(op)>=sizeof(pop)) {
+        fprintf(stderr,"error: %s:%d: rule head is too long\n",g,line);
+        exit(1);
+      }
+      strcpy(plhs,lhs);
+      strcpy(pop,op);
+      pline=line;
+      appendtext(&pending,&pendingn,&pendingm,"");
+      continue;
+    }
+    if('|'==*b) {
+      if(!havehead) {
+        fprintf(stderr,"error: %s:%d: continuation without a preceding rule\n",g,line);
+        exit(1);
+      }
+      strcpy(r,b+1);
+    }
     else {
-      strcpy(p,split(b,' ',&z));
-      strcpy(q,split(0,' ',&z));
-      strcpy(r,b+strlen(p)+strlen(q)+2);
+      lhs=split(b,' ',&z);
+      op=split(0,' ',&z);
+      if(!lhs||!*lhs||!op||!*op) {
+        fprintf(stderr,"error: %s:%d: expected \"lhs operator rhs\"\n",g,line);
+        exit(1);
+      }
+      if(strlen(lhs)>=sizeof(p)||strlen(op)>=sizeof(q)) {
+        fprintf(stderr,"error: %s:%d: rule head is too long\n",g,line);
+        exit(1);
+      }
+      strcpy(p,lhs);
+      strcpy(q,op);
+      strcpy(r,z?z:"");
+      havehead=1;
     }
     s=split(r,'|',&z);
     while(s) {
-      snprintf(RA[RN].r,1024,"%s %s %s",p,q,s?s:"");
+      ensurerules(RN+1);
+      n=snprintf(RA[RN].r,sizeof(RA[RN].r),"%s %s %s",p,q,s);
+      if(n<0||n>=(int)sizeof(RA[RN].r)) {
+        fprintf(stderr,"error: %s:%d: rule is too long\n",g,line);
+        exit(1);
+      }
       cs(RA[RN++].r);
       spqc(q,s,'*');
       spqc(q,s,'+');
@@ -556,12 +1300,15 @@ void pgread(char *g) {
       s=split(0,'|',&z);
     }
   }
+  if(pending) compileebnf(plhs,pop,pending,g,pline);
+  free(pending);
   fclose(fp);
 }
 
 void pgparse() {
   int i;
   char *p,b[1024],*z;
+  if(RN<=1) die("grammar contains no productions");
   addnt(str("$a"));
   for(i=1;i<RN;i++) {
     strcpy(b,RA[i].r);
@@ -572,6 +1319,11 @@ void pgparse() {
     p=split(b,' ',&z); if(!p) continue; RA[i].lhs=str(p);
     p=split(0,' ',&z); if(!p) continue; RA[i].op=str(p);
     p=split(0,' ',&z); while(p) {
+      if(RA[i].rhsi==RA[i].rhsm) {
+        RA[i].rhsm=RA[i].rhsm?RA[i].rhsm*2:8;
+        RA[i].rhs=realloc(RA[i].rhs,sizeof(*RA[i].rhs)*RA[i].rhsm);
+        if(!RA[i].rhs) die("out of memory");
+      }
       RA[i].rhs[RA[i].rhsi++]=str(p);
       addt(str(p));
       p=split(0,' ',&z);
@@ -580,8 +1332,12 @@ void pgparse() {
   addt(str("$e"));
   RA[0].lhs=str("$a");
   RA[0].op=RA[1].op;
+  RA[0].rhsm=1;
+  RA[0].rhs=malloc(sizeof(*RA[0].rhs));
+  if(!RA[0].rhs) die("out of memory");
   RA[0].rhs[RA[0].rhsi++]=RA[1].lhs;
-  sprintf(RA[0].r,"%s %s %s",RA[0].lhs,RA[0].op,RA[0].rhs[0]);
+  snprintf(RA[0].r,sizeof(RA[0].r),"%s %s %s",RA[0].lhs,RA[0].op,RA[0].rhs[0]);
+  buildsymbolmaps();
   firstgen();
   followgen();
 }
@@ -594,24 +1350,27 @@ void pgreport() {
   for(i=0;i<RN;i++) printf("%2d. %s\n",i,escape(RA[i].r));
 }
 
+int pgconflicts() {
+  return conflicts;
+}
+
+void pgsetquiet(int q) {
+  quiet=q;
+}
+
 /* goto items in states */
 static int gins() {
-  int i,j,k,n,m;
+  int i,j,k,newn;
+  if(gmode!=LR1&&gmode!=LALR) return statehashfind(SN);
+  newn=SC[SN];
   for(i=0;i<SN;i++) {
-    n=GN;
-    for(j=0;j<GN;j++) {
-      if(S[j]!=i) continue;
-      for(k=GN;k<N;k++) {
-        if(R[j]==R[k]&&M[j]==M[k]&&CN[j]==CN[k]) {
-          for(m=0;m<CN[j];m++) {
-            if(C[j][m]!=C[k][m]) break;
-          }
-          if(m==CN[j]) ++n;
-        }
-      }
+    if(SC[i]!=newn) continue;
+    for(j=SB[i];j<itemend(i);j++) {
+      for(k=SB[SN];k<itemend(SN);k++)
+        if(R[j]==R[k]&&M[j]==M[k]&&samecontext(j,k)) break;
+      if(k==itemend(SN)) break;
     }
-    if(N!=n) continue;
-    return i;
+    if(j==itemend(i)) return i;
   }
   return -1;
 }
@@ -620,35 +1379,237 @@ static int gins() {
    state s0 is a combination of s1 if s0 has an action A for a symbol P iff
    s1 has an action A for P and A is not a unit reduction. */
 static int getcomb() {
-  int i,j,k,n;
+  int i,j,k,found;
   for(i=0;i<SN;i++) {
-    n=GTN;
-    for(j=0;j<GTN;j++) {
-      if(TS[j]!=i) continue;
-      for(k=GTN;k<TN;k++) if(TT[j]==TT[k]&&TA[j]==TA[k]&&TR[j]==TR[k]) ++n;
+    if(sdeleted(i)) continue;
+    for(k=GTN;k<TN;k++) {
+      found=0;
+      for(j=0;j<GTN;j++) {
+        if(TD[j]||TS[j]!=i||TT[j]!=TT[k]||TA[j]!=TA[k]) continue;
+        if(TA[j]==0 ? TR[j]==TR[k] : TG[j]==TG[k]) { found=1; break; }
+      }
+      if(!found) break;
     }
-    if(n==TN) return i;
+    if(k!=TN) continue;
+    for(j=0;j<GTN;j++) {
+      if(TD[j]||TS[j]!=i) continue;
+      if(TA[j]==0&&RA[TR[j]].rhsi==1&&RA[TR[j]].lhs!=str("$a")) continue;
+      for(k=GTN;k<TN;k++) {
+        if(TT[j]!=TT[k]||TA[j]!=TA[k]) continue;
+        if(TA[j]==0 ? TR[j]==TR[k] : TG[j]==TG[k]) break;
+      }
+      if(k==TN) break;
+    }
+    if(j==GTN) return i;
   }
   return -1;
 }
 
+typedef struct {
+  int to,next;
+} pedge;
+
+static void addedge(pedge **edge, int *en, int *em, int *head, int from, int to) {
+  int i;
+  for(i=head[from];i>=0;i=(*edge)[i].next)
+    if((*edge)[i].to==to) return;
+  if(*en==*em) {
+    *em=*em?*em*2:4096;
+    *edge=realloc(*edge,sizeof(**edge)*(size_t)*em);
+    if(!*edge) die("out of memory");
+  }
+  (*edge)[*en].to=to;
+  (*edge)[*en].next=head[from];
+  head[from]=(*en)++;
+}
+
+static int stateitem(int s, int r, int m) {
+  int i;
+  for(i=SB[s];i<itemend(s);i++)
+    if(R[i]==r&&M[i]==m) return i;
+  return -1;
+}
+
+static int statetarget(int s, char *symbol, int *begin) {
+  int i;
+  for(i=begin[s];i<begin[s+1];i++)
+    if(TT[i]==symbol&&TA[i]!=0) return TG[i];
+  return -1;
+}
+
+static void rebuildlalrtransitions() {
+  int i,s,n=TN;
+  int *ts=malloc(sizeof(*ts)*(size_t)n);
+  char **tt=malloc(sizeof(*tt)*(size_t)n);
+  int *ta=malloc(sizeof(*ta)*(size_t)n);
+  int *tg=malloc(sizeof(*tg)*(size_t)n);
+  int *tr=malloc(sizeof(*tr)*(size_t)n);
+  int *tm=malloc(sizeof(*tm)*(size_t)n);
+  int *td=malloc(sizeof(*td)*(size_t)n);
+  if(!ts||!tt||!ta||!tg||!tr||!tm||!td) die("out of memory");
+  memcpy(ts,TS,sizeof(*ts)*(size_t)n);
+  memcpy(tt,TT,sizeof(*tt)*(size_t)n);
+  memcpy(ta,TA,sizeof(*ta)*(size_t)n);
+  memcpy(tg,TG,sizeof(*tg)*(size_t)n);
+  memcpy(tr,TR,sizeof(*tr)*(size_t)n);
+  memcpy(tm,TM,sizeof(*tm)*(size_t)n);
+  memcpy(td,TD,sizeof(*td)*(size_t)n);
+  TN=0;
+  statebuilding=1;
+  for(s=0;s<SN;s++) {
+    addreductions(s);
+    for(i=0;i<n;i++) {
+      if(td[i]||ts[i]!=s) continue;
+      addtrans(ts[i],tt[i],ta[i],tg[i],tr[i],tm[i]);
+    }
+  }
+  statebuilding=0;
+  free(ts); free(tt); free(ta); free(tg); free(tr); free(tm); free(td);
+}
+
+static void buildlalrcontexts() {
+  int i,j,k,l,s,t,ni,x,nullable,en=0,em=0,*head,*begin,*queue,*inq;
+  int qhead=0,qtail=0,qcount=0;
+  size_t words=(size_t)(TC+63)/64,w,total;
+  uint64_t *bits;
+  pedge *edge=0;
+  head=malloc(sizeof(*head)*(size_t)N);
+  begin=calloc((size_t)SN+1,sizeof(*begin));
+  queue=malloc(sizeof(*queue)*(size_t)N);
+  inq=calloc((size_t)N,sizeof(*inq));
+  if(!head||!begin||!queue||!inq) die("out of memory");
+  for(i=0;i<N;i++) head[i]=-1;
+  for(i=0;i<TN;i++) begin[TS[i]+1]++;
+  for(i=1;i<=SN;i++) begin[i]+=begin[i-1];
+  if(words&&((size_t)N>SIZE_MAX/words)) die("LALR lookahead table is too large");
+  total=(size_t)N*words;
+  bits=calloc(total?total:1,sizeof(*bits));
+  if(!bits) die("out of memory");
+
+  t=termindex(str("$e"));
+  if(t<0) die("internal error: end token is missing");
+  bits[(size_t)stateitem(0,0,0)*words+(size_t)t/64]|=
+    UINT64_C(1)<<(t%64);
+
+  for(i=0;i<N;i++) {
+    rule *rp=&RA[R[i]];
+    if(M[i]>=rp->rhsi) continue;
+    s=S[i];
+    t=statetarget(s,rp->rhs[M[i]],begin);
+    if(t<0) die("internal error: missing LR(0) successor");
+    j=stateitem(t,R[i],M[i]+1);
+    if(j<0) die("internal error: missing LR(0) successor item");
+    addedge(&edge,&en,&em,head,i,j);
+
+    ni=ntindex(rp->rhs[M[i]]);
+    if(ni<0) continue;
+    k=first(&rp->rhs[M[i]+1],rp->rhsi-M[i]-1);
+    nullable=0;
+    for(l=0;l<k;l++) {
+      if(!F[l]) { nullable=1; continue; }
+      t=termindex(F[l]);
+      if(t<0) die("internal error: FIRST contains a nonterminal");
+      for(x=0;x<NTRN[ni];x++) {
+        j=stateitem(s,NTR[ni][x],0);
+        if(j<0) die("internal error: closure item is missing");
+        bits[(size_t)j*words+(size_t)t/64]|=UINT64_C(1)<<(t%64);
+      }
+    }
+    if(nullable)
+      for(x=0;x<NTRN[ni];x++) {
+        j=stateitem(s,NTR[ni][x],0);
+        if(j<0) die("internal error: closure item is missing");
+        addedge(&edge,&en,&em,head,i,j);
+      }
+  }
+
+  for(i=0;i<N;i++) {
+    for(w=0;w<words;w++) if(bits[(size_t)i*words+w]) break;
+    if(w==words) continue;
+    queue[qtail++]=i;
+    if(qtail==N) qtail=0;
+    qcount++;
+    inq[i]=1;
+  }
+  while(qcount) {
+    i=queue[qhead++];
+    if(qhead==N) qhead=0;
+    qcount--;
+    inq[i]=0;
+    for(k=head[i];k>=0;k=edge[k].next) {
+      j=edge[k].to;
+      nullable=0;
+      for(w=0;w<words;w++) {
+        uint64_t old=bits[(size_t)j*words+w];
+        bits[(size_t)j*words+w]|=bits[(size_t)i*words+w];
+        if(old!=bits[(size_t)j*words+w]) nullable=1;
+      }
+      if(nullable&&!inq[j]) {
+        queue[qtail++]=j;
+        if(qtail==N) qtail=0;
+        qcount++;
+        inq[j]=1;
+      }
+    }
+  }
+
+  for(i=0;i<N;i++) {
+    CN[i]=0;
+    for(t=0;t<TC;t++) {
+      if(!(bits[(size_t)i*words+(size_t)t/64]&(UINT64_C(1)<<(t%64))))
+        continue;
+      ensurecontext(i,CN[i]+1);
+      C[i][CN[i]++]=T[t];
+    }
+  }
+  free(bits); free(edge); free(head); free(begin); free(queue); free(inq);
+  gmode=LALR;
+  rebuildlalrtransitions();
+}
+
+static int directlalr;
+
 void pgbuild(int m) {
-  int i,j,k,c,s;
-  char *u[128];
-  gmode=m;
+  int i,j,k,c,s,lalr=m==LALR;
+  char **u=malloc(sizeof(*u)*(size_t)(NTC+TC));
+  if(!u) die("out of memory");
+  gmode=lalr?LR0:m;
+  statebuilding=1;
+  ensureitems(1);
+  ensurestates(1);
   N=SN=1;
-  if(gmode==LR1||gmode==LALR) { C[0][0]=str("$e"); CN[0]++; }
+  SB[0]=0;
+  SC[0]=1;
+  if(gmode==LR1||gmode==LALR) {
+    ensurecontext(0,1);
+    C[0][0]=str("$e");
+    CN[0]++;
+  }
   closure(0);
+  if(gmode!=LR1&&gmode!=LALR) statehashinsert(0);
   for(i=0;i<SN;i++) {
+    if(!lalr) addreductions(i);
     c=ufrhs(i,u);
     for(j=0;j<c;j++) {
       if(gmode==LR1||gmode==LALR) goto1(i,u[j]);
       else goto0(i,u[j]);
       s=gins();
-      if(s<0) SN++;
-      else { N=GN; for(k=0;k<TN;k++) if(TG[k]==SN) TG[k]=s; }
+      if(s<0) {
+        if(gmode!=LR1&&gmode!=LALR) statehashinsert(SN);
+        SN++;
+      }
+      else {
+        N=GN;
+        for(k=TN-1;k>=0&&TS[k]==i;k--) if(TG[k]==SN) TG[k]=s;
+      }
     }
   }
+  statebuilding=0;
+  if(lalr) {
+    directlalr=1;
+    buildlalrcontexts();
+  }
+  free(u);
 }
 
 void pgprints(int i) {
@@ -774,42 +1735,129 @@ void pgprintt2() {
   free(d);
 }
 
-static char TL[256][256];
-static int TLE[256];
+static char (*TL)[16];
+static int *TLE;
+static int TLM;
+static int TLC;
+
+static void fccomment(FILE *fp, char *s) {
+  while(s&&*s) {
+    if(s[0]=='*'&&s[1]=='/') { fputs("* /",fp); s+=2; }
+    else fputc(*s++,fp);
+  }
+}
+
+static int symindex(char *s) {
+  int i=termindex(s);
+  if(i>=0) return i;
+  i=ntindex(s);
+  if(i>=0) return TC+i;
+  return -1;
+}
+
+static void buildmap() {
+  int i,j,n=TC+NTC;
+  char *a,**rep;
+  if(n>TLM) {
+    TL=realloc(TL,sizeof(*TL)*(size_t)n);
+    TLE=realloc(TLE,sizeof(*TLE)*(size_t)n);
+    if(!TL||!TLE) die("out of memory");
+    TLM=n;
+  }
+  rep=malloc(sizeof(*rep)*(size_t)n);
+  if(!rep) die("out of memory");
+  TLC=0;
+  for(i=0;i<n;i++) {
+    a=i<TC?T[i]:NT[i-TC];
+    rep[i]=a;
+    if(eunitr&&a!=str("$a"))
+      for(j=0;j<LFN;j++) if(derives(a,LF[j])) { rep[i]=LF[j]; break; }
+    for(j=0;j<i;j++) if(rep[j]==rep[i]) break;
+    TLE[i]=j<i?TLE[j]:TLC++;
+    snprintf(TL[i],sizeof(TL[i]),"T%03d",TLE[i]);
+  }
+  free(rep);
+}
+
 void pgh() {
-  int i,j,k,n=0;
+  int i,j,n=0;
   FILE *fp;
-  char *ta[1024];
+  char *a,**ta=malloc(sizeof(*ta)*(size_t)(TC+NTC));
+  if(!ta) die("out of memory");
   if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
+  buildmap();
   fprintf(fp,"#ifndef P_H\n#define P_H\n\n");
   for(i=0;i<TC;i++) ta[n++]=T[i];
   for(i=0;i<NTC;i++) ta[n++]=NT[i];
   for(i=0;i<n;i++) {
-    k=i;
-    for(j=0;j<LFN;j++)
-      if(ta[i]!=str("$a")&&derives(ta[i],LF[j])) 
-        for(k=0;k<n;k++)
-          if(ta[k]==LF[j]) break;
-    TLE[k]=i;
-    sprintf(TL[i],"T%03d",k);
-    if(k!=i) continue; /* don't define eliminated tokens */
-    fprintf(fp,"#define T%03d %3d /* %s */\n",k,k,ta[i]);
+    for(j=0;j<i;j++) if(TLE[j]==TLE[i]) break;
+    if(j<i) continue;
+    a=ta[i];
+    if(eunitr&&a!=str("$a"))
+      for(j=0;j<LFN;j++) if(derives(a,LF[j])) { a=LF[j]; break; }
+    fprintf(fp,"#define T%03d %3d /* ",TLE[i],TLE[i]);
+    fccomment(fp,a);
+    fprintf(fp," */\n");
   }
   fprintf(fp,"\n");
   fprintf(fp,"void pgparse(char *p);\n\n");
   fprintf(fp,"#endif /* P_H */\n");
   fclose(fp);
+  free(ta);
 }
 
 static void a2c(FILE *fp, char *k, int *v, int n) {
   int i;
   fprintf(fp,"static int %s[%d]={",k,n);
-  for(i=0;i<n;i++) fprintf(fp,"%d%s",v[i],i==n-1?"":",");
+  for(i=0;i<n;i++) {
+    if(i&&!(i%16)) fprintf(fp,"\n");
+    fprintf(fp,"%d%s",v[i],i==n-1?"":",");
+  }
   fprintf(fp,"};\n");
 }
 
+static void sparsec(FILE *fp, int go) {
+  int i,j,n=0,*start,*token,*index;
+  char *sn=go?"GS":"AS",*tn=go?"GTI":"AT",*in=go?"GI":"AI";
+  for(i=0;i<TN;i++)
+    if(!TD[i]&&((TA[i]==2)==go)) n++;
+  start=calloc((size_t)SN+1,sizeof(*start));
+  token=malloc(sizeof(*token)*(size_t)(n?n:1));
+  index=malloc(sizeof(*index)*(size_t)(n?n:1));
+  if(!start||!token||!index) die("out of memory");
+  n=0;
+  for(i=0;i<TN;i++) {
+    int s;
+    if(TD[i]||((TA[i]==2)!=go)) continue;
+    s=symindex(TT[i]);
+    if(s<0) die("internal error: transition has an unknown symbol");
+    s=TLE[s];
+    for(j=n-1;j>=0&&TS[index[j]]==TS[i];j--)
+      if(token[j]==s) break;
+    if(j>=0&&TS[index[j]]==TS[i]) {
+      if(go) {
+        if(TG[index[j]]!=TG[i])
+          die("unit elimination produced incompatible goto actions");
+      }
+      else if(!((TA[index[j]]==0&&TA[i]==0&&TR[index[j]]==TR[i]) ||
+                (TA[index[j]]==1&&TA[i]==1&&TG[index[j]]==TG[i])))
+        die("unit elimination produced incompatible parser actions");
+      continue;
+    }
+    start[TS[i]+1]++;
+    token[n]=s;
+    index[n++]=i;
+  }
+  for(i=1;i<=SN;i++) start[i]+=start[i-1];
+  a2c(fp,sn,start,SN+1);
+  a2c(fp,tn,token,n);
+  a2c(fp,in,index,n);
+  fprintf(fp,"\n");
+  free(start); free(token); free(index);
+}
+
 void pgc() {
-  int i,j,k,*t,n,b=0;
+  int i,j,b=0;
   FILE *fp;
   if(!(fp=fopen("p.c","w+"))) { fprintf(stderr,"error: failed to create p.c\n"); exit(1); }
   fprintf(fp,"#include \"p.h\"\n");
@@ -817,33 +1865,13 @@ void pgc() {
   fprintf(fp,"#include <stdlib.h>\n");
   fprintf(fp,"#include <ctype.h>\n\n");
 
-  fprintf(fp,"/*\n%s*/\n\n",arules);
+  fprintf(fp,"/*\n");
+  fccomment(fp,arules);
+  fprintf(fp,"*/\n\n");
+  fprintf(fp,"#define PGTOKENS %d\n\n",TLC);
 
-  j=TC+NTC+LFN;
-  for(k=0;k<LFN;k++) if(isnt(LF[k])) --j;
-  t=malloc(sizeof(int)*j);
-  fprintf(fp,"static int SR[%d][%d]={\n",SN,j);
-  for(i=0;i<SN;i++) {
-    if(sdeleted(i)) { fprintf(fp,"{0},\n"); continue; }
-    fprintf(fp,"{");
-    memset(t,-1,j*sizeof(int));
-    for(k=0;k<TN;k++) {
-      if(TD[k]) continue;
-      if(TS[k]!=i) continue;
-      if(ist(TT[k])) {
-        for(n=0;n<TC;n++) if(T[n]==TT[k]) break;
-        t[TLE[n]]=k;
-      }
-      else {
-        for(n=0;n<NTC;n++) if(NT[n]==TT[k]) break;
-        t[TLE[TC+n]]=k;
-      }
-    }
-    for(k=0;k<j;k++) fprintf(fp,"%d%s",t[TLE[k]],k==j-1?"":",");
-    fprintf(fp,"}%s\n",i==SN-1?"":",");
-  }
-  fprintf(fp,"};\n\n");
-  free(t);
+  sparsec(fp,0);
+  sparsec(fp,1);
 
   a2c(fp,"TA",TA,TN);
   a2c(fp,"TG",TG,TN);
@@ -869,13 +1897,17 @@ void pgc() {
   if(eunitr) {
     for(i=0;i<RN;i++)
       if(RA[i].lhs==str("$a")||RA[i].rhsi!=1)
-        fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
+        { fprintf(fp,"static void r%03d() { /* ",i); fccomment(fp,RA[i].r); fprintf(fp," */\n}\n"); }
     fprintf(fp,"\nstatic void (*R[%d])()={",RN);
     for(i=0;i<RN;i++)
       if(RA[i].lhs==str("$a")||RA[i].rhsi!=1) fprintf(fp,"%sr%03d",b++?",":"",i);
       else fprintf(fp,"%s%d",b++?",":"",0);
   } else {
-    for(i=0;i<RN;i++) fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
+    for(i=0;i<RN;i++) {
+      fprintf(fp,"static void r%03d() { /* ",i);
+      fccomment(fp,RA[i].r);
+      fprintf(fp," */\n}\n");
+    }
     fprintf(fp,"\nstatic void (*R[%d])()={",RN);
     for(i=0;i<RN;i++) fprintf(fp,"%sr%03d",b++?",":"",i);
   }
@@ -886,7 +1918,7 @@ void pgc() {
 "  static size_t m=256;\n"
 "  if(!pgta) pgta=(int*)malloc(m*sizeof(int));\n"
 "  if(!pgva) pgva=(int*)malloc(m*sizeof(int));\n"
-"  if(pgi==m) {\n"
+"  if((size_t)pgi==m) {\n"
 "    m<<=1;\n"
 "    pgta=(int*)realloc(pgta,m*sizeof(int));\n"
 "    pgva=(int*)realloc(pgva,m*sizeof(int));\n"
@@ -906,56 +1938,64 @@ void pgc() {
 "  return 1;\n"
 "}\n"
 "\n"
+"static int lookup(int s, int t, int *start, int *token, int *index) {\n"
+"  int i;\n"
+"  for(i=start[s];i<start[s+1];i++) if(token[i]==t) return index[i];\n"
+"  return -1;\n"
+"}\n"
+"\n"
 "void pgparse(char *p) {\n"
-"  int i=0,j,r;\n"
-"  static int *ss=0,*st=0;\n"
+"  int i=0,j,r,g;\n"
+"  static int *ss=0;\n"
 "  static size_t sm=2;\n"
 "  size_t si=0;\n"
 "  vi=-1; pgi=0;\n"
-"  lex(p);\n"
-"  if(pgi==1) return;\n"
+"  if(!lex(p)) return;\n"
 "  if(!vv) vv=(int*)malloc(vm*sizeof(int));\n"
 "  if(!ss) ss=(int*)malloc(sm*sizeof(int));\n"
-"  if(!st) st=(int*)malloc(sm*sizeof(int));\n"
 "  ss[si]=0;\n"
 "  while(i<pgi) {\n"
 "    if(vi==vm-1) { vm<<=1; vv=(int*)realloc(vv,vm*sizeof(int)); }\n"
 "    if(si==sm-2) {\n"
 "      sm<<=1;\n"
 "      ss=(int*)realloc(ss,sm*sizeof(int));\n"
-"      st=(int*)realloc(st,sm*sizeof(int));\n"
 "    }\n"
-"    j=SR[ss[si]][pgta[i]];\n"
+"    if(pgta[i]<0||pgta[i]>=PGTOKENS) { printf(\"token\\n\"); return; }\n"
+"    j=lookup(ss[si],pgta[i],AS,AT,AI);\n"
 "    if(j==-1) { printf(\"parse\\n\"); return; }\n"
 "    if(TA[j]) {      /* shift */\n"
 "      ss[++si]=TG[j];\n"
-"      st[si]=pgta[i];\n"
 "      vv[++vi]=pgva[i++];\n"
 "    } else {         /* reduce */\n"
 "      r=TR[j];\n"
 "      (*R[r])();\n"
 "      if(!r) return; /* accept */\n"
+"      if(si<(size_t)RPOP[r]) { printf(\"parse2\\n\"); return; }\n"
 "      si-=RPOP[r];\n"
-"      j=SR[ss[si]][LEFT[r]];\n"
-"      if(j==-1) { printf(\"parse2\\n\"); return; }\n"
-"      ss[++si]=TG[j];\n"
-"      st[si]=LEFT[r];\n"
+"      g=lookup(ss[si],LEFT[r],GS,GTI,GI);\n"
+"      if(g!=-1) g=TG[g];\n"
+"      if(g==-1) { printf(\"parse2\\n\"); return; }\n"
+"      ss[++si]=g;\n"
 "    }\n"
 "  }\n"
 "}\n"
 "\n"
 "int main() {\n"
-"  int c;\n"
+"  int c,eof;\n"
 "  size_t i,m=2;\n"
 "  char *b=malloc(m+2);\n"
 "  printf(\"  \");\n"
-"  for(i=0;;i=0) {\n"
-"    while((c=fgetc(stdin))&&c!='\\n') {\n"
+"  for(;;) {\n"
+"    i=0; eof=0;\n"
+"    while((c=fgetc(stdin))!=EOF&&c!='\\n') {\n"
 "      b[i++]=c;\n"
 "      if(i==m) { m<<=1; b=realloc(b,m+2); }\n"
 "    }\n"
+"    if(c==EOF) eof=1;\n"
+"    if(eof&&!i) break;\n"
 "    b[i++]='\\n'; b[i]=0;\n"
 "    pgparse(b);\n"
+"    if(eof) break;\n"
 "    printf(\"  \");\n"
 "  }\n"
 "  return 0;\n"
@@ -975,45 +2015,54 @@ static void leaf() {
     if(RA[i].rhsi==1) {
       b=1;
       for(j=1;j<RN;j++) if(RA[j].rhsi==1&&RA[j].lhs==RA[i].rhs[0]) b=0;
-      if(b&&!inleaf(RA[i].rhs[0])) LF[LFN++]=RA[i].rhs[0];
+      if(b&&!inleaf(RA[i].rhs[0])) {
+        if(LFN==LFM) {
+          LFM=LFM?LFM*2:128;
+          LF=realloc(LF,sizeof(*LF)*LFM);
+          if(!LF) die("out of memory");
+        }
+        LF[LFN++]=RA[i].rhs[0];
+      }
     }
   }
 }
-static char *DR[256];
-static int DRN;
+static char **DR;
+static int DRN,DRM;
 static int indr(char *s) {
   int i;
   for(i=0;i<DRN;i++) if(s==DR[i]) return 1;
   return 0;
 }
-static int derives(char *a, char *b) {
-  int i;
+static int derives1(char *a, char *b, int *seen) {
+  int i,n;
   if(a==b) return 1;
   if(ist(a)) return 0;
+  for(n=0;n<NTC;n++) if(NT[n]==a) break;
+  if(n==NTC||seen[n]) return 0;
+  seen[n]=1;
   for(i=0;i<RN;i++) {
     if(a!=RA[i].lhs) continue;
-    if(!RA[i].rhsi) continue;
+    if(RA[i].rhsi!=1) continue;
     if(b==RA[i].rhs[0]) return 1;
-    if(a==RA[i].rhs[0]) continue;
-    if(derives(RA[i].rhs[0],b)) return 1;
+    if(derives1(RA[i].rhs[0],b,seen)) return 1;
   }
   return 0;
 }
+
+static int derives(char *a, char *b) {
+  int r,*seen=calloc((size_t)NTC,sizeof(*seen));
+  if(!seen) die("out of memory");
+  r=derives1(a,b,seen);
+  free(seen);
+  return r;
+}
+
 static int copytrans(int a, int b) {
-  int i,j,r=0;
-  for(i=0;i<TN;i++) {
-    if(a!=TS[i]) continue;
-    if(RA[TR[i]].rhsi==1&&RA[TR[i]].lhs!=str("$a")) continue;
-    for(j=0;j<TN;j++)
-      if(TS[j]==b && TT[j]==TT[i] && TA[j]==TA[i] && TG[j]==TG[i] && TR[j]==TR[i] && TM[j]==TM[i])
-        break;
-    if(j!=TN) continue;
-    TS[TN]=b;
-    TT[TN]=TT[i];
-    TA[TN]=TA[i];
-    TG[TN]=TG[i];
-    TR[TN]=TR[i];
-    TM[TN++]=TM[i];
+  int i,n=TN,r=0;
+  for(i=0;i<n;i++) {
+    if(TD[i]||a!=TS[i]) continue;
+    if(TA[i]==0&&RA[TR[i]].rhsi==1&&RA[TR[i]].lhs!=str("$a")) continue;
+    addtrans(b,TT[i],TA[i],TG[i],TR[i],TM[i]);
     r++;
   }
   return r;
@@ -1022,13 +2071,15 @@ static int copytrans(int a, int b) {
 static int xshur(int s, char *x) {
   int i,xs;
   for(i=0;i<TN;i++) {
-    if(s!=TS[i]) continue;
+    if(TD[i]||s!=TS[i]||TA[i]==0) continue;
     if(x==TT[i]) break;
   }
+  if(i==TN) return 0;
   xs=TG[i]; /* x-successor */
   for(i=0;i<N;i++) {
     if(xs!=S[i]) continue;
     if(RA[R[i]].rhsi!=1) continue;
+    if(M[i]!=RA[R[i]].rhsi) continue;
     if(RA[R[i]].lhs==str("$a")) continue;
     return 1;
   }
@@ -1036,38 +2087,55 @@ static int xshur(int s, char *x) {
 }
 /* Based on Pager,D. (1977) Eliminating Unit Productions from LR Parsers. Acta Informatica. */
 void pgeunitr() {
-  int i,j,k,c,p,q,s,b;
-  char *u[128];
+  int i,j,k,c,p,q,s,b,oldconf;
+  int *reachable;
+  char **u=malloc(sizeof(*u)*(size_t)(NTC+TC));
+  if(!u) die("out of memory");
   eunitr=1;
   if(conflicts) { fprintf(stderr,"error: cannot eliminate unit reductions when there are conflicts.\n"); exit(1); }
   leaf();
   /* 1. for each state, do step 2 for each leaf */
   for(i=0;i<SN;i++) {
     c=ufrhs(i,u); /* successors */
-    DRN=0;
     for(j=0;j<LFN;j++) {
+      DRN=0;
       /* 2. combine states */
       if(!xshur(i,LF[j])) continue; /* if x-successor has no unit reduction */
-      for(k=0;k<c;k++) if(derives(u[k],LF[j])) if(!indr(u[k])) DR[DRN++]=u[k];
+      for(k=0;k<c;k++) if(derives(u[k],LF[j])&&!indr(u[k])) {
+        if(DRN==DRM) {
+          DRM=DRM?DRM*2:128;
+          DR=realloc(DR,sizeof(*DR)*DRM);
+          if(!DR) die("out of memory");
+        }
+        DR[DRN++]=u[k];
+      }
       GN=N; GTN=TN;
+      ensurestates(SN+1);
+      SB[SN]=GN;
+      SC[SN]=0;
+      oldconf=conflicts;
       for(k=0;k<DRN;k++) {
         for(b=0,p=0;p<TN;p++) {
-          if(i!=TS[p]) continue;
+          if(TD[p]||i!=TS[p]||TA[p]==0) continue;
           if(DR[k]!=TT[p]) continue;
           for(q=0;q<N;q++) {
             if(TG[p]!=S[q]) continue;
-            add2state0(SN,R[q],M[q]);
+            if(gmode==LR1||gmode==LALR)
+              add2state1(SN,R[q],M[q],C[q],CN[q]);
+            else add2state0(SN,R[q],M[q]);
             b=1;
           }
           if(b) copytrans(TG[p],SN);
         }
       }
+      if(conflicts!=oldconf)
+        die("unit elimination introduced an action conflict");
       if(N==GN) continue; /* no new state added */
       s=getcomb(); /* T or R */
       if(s<0) s=SN++;
       else { N=GN; TN=GTN; }
       for(k=0;k<TN;k++) {
-        if(i!=TS[k]) continue;
+        if(TD[k]||i!=TS[k]||TA[k]==0) continue;
         if(derives(TT[k],LF[j])) TG[k]=s; /* if derives leaf, update successor */
       }
     }
@@ -1078,16 +2146,23 @@ void pgeunitr() {
     for(j=0;j<TN;j++) if(TR[j]==i&&TA[j]==0&&TM[j]==1) TD[j]=1;
   }
   /* 4. delete all states which at this stage are not reachable from state 0 */
-  for(i=0;i<SN;i++) {
-    for(j=0;j<TN;j++) { /* does it have a goto? */
-      if(i!=TG[j]) continue;
-      if(!TD[j]) break;
+  reachable=calloc(SN,sizeof(int));
+  if(!reachable) die("out of memory");
+  reachable[0]=1;
+  for(b=1;b;) {
+    b=0;
+    for(i=0;i<TN;i++) {
+      if(TD[i]||TA[i]==0||!reachable[TS[i]]||reachable[TG[i]]) continue;
+      reachable[TG[i]]=1;
+      b=1;
     }
-    if(j!=TN) continue;
-    /* delete all references to this state */
+  }
+  for(i=0;i<SN;i++) {
+    if(reachable[i]) continue;
     for(j=0;j<N;j++) if(i==S[j]) D[j]=1;
     for(j=0;j<TN;j++) if(i==TS[j]) TD[j]=1;
   }
+  free(reachable);
   /* 5. replace every reduce action y>w with x>w where x is a leaf and y derives x */
   for(i=0;i<TN;i++) {
     if(TD[i]) continue;
@@ -1095,27 +2170,41 @@ void pgeunitr() {
     if(TT[i]==str("$a")) continue;
     for(j=0;j<LFN;j++) if(derives(TT[i],LF[j])) { TT[i]=LF[j]; break; }
   }
+  oldconf=conflicts;
+  deduptrans();
+  if(conflicts!=oldconf)
+    die("unit elimination introduced an action conflict");
+  sorttrans();
+  free(u);
 }
 
 static int cmpcore(int p, int q) {
-  int i,j,k,pn=0,qn=0;
+  int i,j,pn=0,qn=0;
   for(i=0;i<N;i++) if(S[i]==p) pn++;
   for(j=0;j<N;j++) if(S[j]==q) qn++;
   if(pn!=qn) return 1;
-  for(i=0;i<N;i++) if(S[i]==p) break;
-  for(j=0;j<N;j++) if(S[j]==q) break;
-  for(k=0;k<pn;k++,i++,j++) if(R[i]!=R[j]||M[i]!=M[j]) break;
-  return k!=pn;
+  for(i=0;i<N;i++) {
+    if(S[i]!=p) continue;
+    for(j=0;j<N;j++)
+      if(S[j]==q&&R[i]==R[j]&&M[i]==M[j]) break;
+    if(j==N) return 1;
+  }
+  return 0;
 }
 
 static void mergectx(int p, int q) {
-  int i=0,j=0,k,m;
-  while(S[i]!=p)i++;
-  while(S[j]!=q)j++;
-  while(S[i]==p) {
-    for(k=0;k<CN[j];k++,i++,j++) {
+  int i,j,k,m;
+  for(j=0;j<N;j++) {
+    if(S[j]!=q) continue;
+    for(i=0;i<N;i++)
+      if(S[i]==p&&R[i]==R[j]&&M[i]==M[j]) break;
+    if(i==N) die("internal error: LALR cores do not match");
+    for(k=0;k<CN[j];k++) {
       for(m=0;m<CN[i];m++) if(C[i][m]==C[j][k]) break;
-      if(m==CN[i]) C[i][CN[i]++]=C[j][k];
+      if(m==CN[i]) {
+        ensurecontext(i,CN[i]+1);
+        C[i][CN[i]++]=C[j][k];
+      }
     }
   }
 }
@@ -1161,34 +2250,53 @@ static void sorttrans() {
   free(ts); free(tt); free(ta); free(tg); free(tr); free(tm); free(td);
 }
 
-static void purgeds() {
-  int i,j,k;
-  int *s=(int*)malloc(sizeof(int)*N);
-  int *r=(int*)malloc(sizeof(int)*N);
-  int *m=(int*)malloc(sizeof(int)*N);
-  int *d=(int*)malloc(sizeof(int)*N);
-  char **c=malloc(sizeof(char*)*N*32);
-  int *cn=(int*)malloc(sizeof(int)*N);
-  memcpy(s,S,sizeof(int)*N);
-  memcpy(r,R,sizeof(int)*N);
-  memcpy(m,M,sizeof(int)*N);
-  memcpy(d,D,sizeof(int)*N);
-  for(i=0;i<N;i++) for(j=0;j<32;j++) c[i*32+j]=C[i][j];
-  memcpy(cn,CN,sizeof(int)*N);
+static void deduptrans() {
+  int i,n=TN;
+  int *ts=malloc(sizeof(int)*n);
+  char **tt=malloc(sizeof(char*)*n);
+  int *ta=malloc(sizeof(int)*n);
+  int *tg=malloc(sizeof(int)*n);
+  int *tr=malloc(sizeof(int)*n);
+  int *tm=malloc(sizeof(int)*n);
+  int *td=malloc(sizeof(int)*n);
+  if(!ts||!tt||!ta||!tg||!tr||!tm||!td) die("out of memory");
+  memcpy(ts,TS,sizeof(int)*n);
+  memcpy(tt,TT,sizeof(char*)*n);
+  memcpy(ta,TA,sizeof(int)*n);
+  memcpy(tg,TG,sizeof(int)*n);
+  memcpy(tr,TR,sizeof(int)*n);
+  memcpy(tm,TM,sizeof(int)*n);
+  memcpy(td,TD,sizeof(int)*n);
+  TN=0;
+  for(i=0;i<n;i++)
+    if(!td[i]) addtrans(ts[i],tt[i],ta[i],tg[i],tr[i],tm[i]);
+  free(ts); free(tt); free(ta); free(tg); free(tr); free(tm); free(td);
+}
 
-  for(i=0,j=0;i<N;i++) {
-    if(d[i]) continue;
-    S[j]=s[i];
-    R[j]=r[i];
-    M[j]=m[i];
-    D[j]=d[i];
-    for(k=0;k<32;k++) C[j][k]=c[i*32+k];
-    CN[j]=cn[i];
+static void purgeds() {
+  int i,j=0,n=N;
+  int *s=malloc(sizeof(*s)*(size_t)n);
+  int *r=malloc(sizeof(*r)*(size_t)n);
+  int *m=malloc(sizeof(*m)*(size_t)n);
+  int *d=malloc(sizeof(*d)*(size_t)n);
+  char ***c=malloc(sizeof(*c)*(size_t)n);
+  int *cn=malloc(sizeof(*cn)*(size_t)n);
+  int *cm=malloc(sizeof(*cm)*(size_t)n);
+  if(!s||!r||!m||!d||!c||!cn||!cm) die("out of memory");
+  for(i=0;i<n;i++) {
+    if(D[i]) { free(C[i]); continue; }
+    s[j]=S[i];
+    r[j]=R[i];
+    m[j]=M[i];
+    d[j]=0;
+    c[j]=C[i];
+    cn[j]=CN[i];
+    cm[j]=CM[i];
     j++;
   }
-  N=j;
-
-  free(s); free(r); free(m); free(d); free(c); free(cn);
+  free(S); free(R); free(M); free(D); free(C); free(CN); free(CM);
+  S=s; R=r; M=m; D=d; C=c; CN=cn; CM=cm;
+  N=NM=j;
 }
 
 static void resequence() {
@@ -1205,30 +2313,49 @@ static void resequence() {
   SN=k+1;
 }
 
+static void rebuildstateindex() {
+  int i;
+  ensurestates(SN+1);
+  for(i=0;i<=SN;i++) SB[i]=SC[i]=0;
+  for(i=0;i<N;i++) {
+    if(!SC[S[i]]) SB[S[i]]=i;
+    SC[S[i]]++;
+  }
+}
+
 void pglalr() {
   int i,j,k;
+  if(directlalr) return;
   for(i=0;i<SN;i++) {
+    if(sdeleted(i)) continue;
     for(j=i+1;j<SN;j++) {
+      if(sdeleted(j)) continue;
       if(cmpcore(i,j)) continue;
       mergectx(i,j);
       updatetrans(i,j);
       for(k=0;k<N;k++) if(S[k]==j) D[k]=1;
     }
   }
+  deduptrans();
   sorttrans();
   purgeds();
   resequence();
+  rebuildstateindex();
 }
 
 /* ll(1) */
-static int LL[256][256]; /* column per terminal, row per nonterminal */
+static int *LL;
+#define LLAT(i,j) LL[(size_t)(i)*(size_t)TC+(size_t)(j)]
 void pgbuildll() {
-  int i,j,k,n,p,cn,t[256],e;
+  int i,j,k,n,p,cn,*t,e;
   rule *rp;
-  char *a,*c[256],b[256],*vc[256][256];
-  void *v[256];
+  char *a,**c,b[256];
+  char ***vc;
+  void **v;
 
-  for(i=0;i<NTC;i++) for(j=0;j<TC;j++) LL[i][j]=-1;
+  LL=malloc(sizeof(*LL)*(size_t)NTC*(size_t)TC);
+  if(!LL) die("out of memory");
+  for(i=0;i<NTC;i++) for(j=0;j<TC;j++) LLAT(i,j)=-1;
   for(i=0;i<RN;i++) {
     rp=&RA[i];
     n=first(rp->rhs,rp->rhsi);
@@ -1237,13 +2364,15 @@ void pgbuildll() {
       if(!F[j]) { e=1; continue; }
       for(k=0;k<TC;k++) if(F[j]==T[k]) break;
       for(p=0;p<NTC;p++) if(rp->lhs==NT[p]) break;
-      if(LL[p][k]!=-1) {
-        printf("warning: first/first conflict\n");
-        printf("         %d. ",LL[p][k]); printmp(LL[p][k],-1,0,0); printf("\n");
-        printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
+      if(LLAT(p,k)!=-1) {
+        if(!quiet) {
+          printf("warning: first/first conflict\n");
+          printf("         %d. ",LLAT(p,k)); printmp(LLAT(p,k),-1,0,0); printf("\n");
+          printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
+        }
         conflicts++;
       }
-      else LL[p][k]=i;
+      else LLAT(p,k)=i;
     }
     if(!e) continue;
     /* first() had empty */
@@ -1251,25 +2380,35 @@ void pgbuildll() {
     for(j=0;j<AC[n];j++) {
       for(k=0;k<TC;k++) if(AV[n][j]==T[k]) break;
       for(p=0;p<NTC;p++) if(rp->lhs==NT[p]) break;
-      if(LL[p][k]!=-1) {
-        printf("warning: first/follow conflict\n");
-        printf("         %d. ",LL[p][k]); printmp(LL[p][k],-1,0,0); printf("\n");
-        printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
+      if(LLAT(p,k)!=-1) {
+        if(!quiet) {
+          printf("warning: first/follow conflict\n");
+          printf("         %d. ",LLAT(p,k)); printmp(LLAT(p,k),-1,0,0); printf("\n");
+          printf("         %d. ",i); printmp(i,-1,0,0); printf("\n");
+        }
         conflicts++;
       }
-      else LL[p][k]=i;
+      else LLAT(p,k)=i;
     }
   }
 
+  if(quiet) return;
   cn=TC+1;
+  t=malloc(sizeof(*t)*(size_t)cn);
+  c=malloc(sizeof(*c)*(size_t)cn);
+  vc=calloc((size_t)cn,sizeof(*vc));
+  v=malloc(sizeof(*v)*(size_t)cn);
+  if(!t||!c||!vc||!v) die("out of memory");
   c[0]=str("");
   for(i=0;i<TC;i++) c[i+1]=T[i];
   for(i=0;i<cn;i++) t[i]=4;
   v[0]=NT;
   for(i=1;i<cn;i++) {
+    vc[i]=malloc(sizeof(*vc[i])*(size_t)NTC);
+    if(!vc[i]) die("out of memory");
     for(j=0;j<NTC;j++) {
-      if(LL[j][i-1]==-1) *b=0;
-      else sprintf(b,"%2d",LL[j][i-1]);
+      if(LLAT(j,i-1)==-1) *b=0;
+      else sprintf(b,"%2d",LLAT(j,i-1));
       vc[i][j]=str(b);
     }
     v[i]=vc[i];
@@ -1277,20 +2416,31 @@ void pgbuildll() {
   printf("\n");
   a = show(cn,NTC,c,t,v,0);
   if(a) { printf("%s",a); free(a); }
+  for(i=1;i<cn;i++) free(vc[i]);
+  free(t); free(c); free(vc); free(v);
 }
 
 static char *tend,*taccept;
 void pghll() {
   int i,n=0;
   FILE *fp;
-  char *ta[1024];
+  char **ta=malloc(sizeof(*ta)*(size_t)(TC+NTC));
+  if(!ta) die("out of memory");
+  if(TC+NTC>TLM) {
+    TL=realloc(TL,sizeof(*TL)*(size_t)(TC+NTC));
+    TLE=realloc(TLE,sizeof(*TLE)*(size_t)(TC+NTC));
+    if(!TL||!TLE) die("out of memory");
+    TLM=TC+NTC;
+  }
   if(!(fp=fopen("p.h","w+"))) { fprintf(stderr,"error: failed to create p.h\n"); exit(1); }
   fprintf(fp,"#ifndef P_H\n#define P_H\n\n");
   for(i=0;i<NTC;i++) ta[n++]=NT[i];
   for(i=0;i<TC;i++) ta[n++]=T[i];
   for(i=0;i<n;i++) {
     sprintf(TL[i],"T%03d",i);
-    fprintf(fp,"#define T%03d %3d /* %s */\n",i,i,ta[i]);
+    fprintf(fp,"#define T%03d %3d /* ",i,i);
+    fccomment(fp,ta[i]);
+    fprintf(fp," */\n");
     if(ta[i]==str("$a")) taccept=TL[i];
     if(ta[i]==str("$e")) tend=TL[i];
   }
@@ -1298,6 +2448,7 @@ void pghll() {
   fprintf(fp,"void pgparse(char *p);\n");
   fprintf(fp,"\n#endif /* P_H */\n");
   fclose(fp);
+  free(ta);
 }
 
 void pgcll() {
@@ -1312,13 +2463,15 @@ void pgcll() {
   fprintf(fp,"#include <string.h>\n");
   fprintf(fp,"#include <ctype.h>\n\n");
 
-  fprintf(fp,"/*\n%s*/\n\n",arules);
+  fprintf(fp,"/*\n");
+  fccomment(fp,arules);
+  fprintf(fp,"*/\n\n");
 
   fprintf(fp,"static int LL[%d][%d]={\n",NTC,NTC+TC);
   for(i=0;i<NTC;i++) {
     fprintf(fp,"{");
     for(j=0;j<NTC;j++) fprintf(fp,"-1,");
-    for(j=0;j<TC;j++) fprintf(fp,"%d%s",LL[i][j],j==TC-1?"":",");
+    for(j=0;j<TC;j++) fprintf(fp,"%d%s",LLAT(i,j),j==TC-1?"":",");
     fprintf(fp,"}%s\n",i==NTC-1?"":",");
   }
   fprintf(fp,"};\n\n");
@@ -1352,7 +2505,11 @@ void pgcll() {
   fprintf(fp,"static pn V[1024];\n");
   fprintf(fp,"static int si=-1,ri=-1,vi=-1;\n\n");
 
-  for(i=0;i<RN;i++) fprintf(fp,"static void r%03d() { /* %s */\n}\n",i,RA[i].r);
+  for(i=0;i<RN;i++) {
+    fprintf(fp,"static void r%03d() { /* ",i);
+    fccomment(fp,RA[i].r);
+    fprintf(fp," */\n}\n");
+  }
   fprintf(fp,"\nstatic void (*F[%d])()={",RN);
   for(i=0;i<RN;i++) fprintf(fp,"%sr%03d",b++?",":"",i);
   fprintf(fp,"};\n");
@@ -1400,17 +2557,21 @@ void pgcll() {
 "}\n"
 "\n"
 "int main() {\n"
-"  int c;\n"
+"  int c,eof;\n"
 "  size_t i,m=2;\n"
 "  char *b=malloc(m+2);\n"
 "  printf(\"  \");\n"
-"  for(i=0;;i=0) {\n"
-"    while((c=fgetc(stdin))&&c!='\\n') {\n"
+"  for(;;) {\n"
+"    i=0; eof=0;\n"
+"    while((c=fgetc(stdin))!=EOF&&c!='\\n') {\n"
 "      b[i++]=c;\n"
 "      if(i==m) { m<<=1; b=realloc(b,m+2); }\n"
 "    }\n"
+"    if(c==EOF) eof=1;\n"
+"    if(eof&&!i) break;\n"
 "    b[i++]='\\n'; b[i]=0;\n"
 "    pgparse(b);\n"
+"    if(eof) break;\n"
 "    printf(\"  \");\n"
 "  }\n"
 "  return 0;\n"

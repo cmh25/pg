@@ -17,11 +17,11 @@
                 | IF <Expression> THEN <Statement>         
                 | INPUT <ID List>       
                 | INPUT '#' Integer ',' <ID List>       
-                | LET Id '=' <Expression> 
+                | LET ID '=' <Expression>
                 | NEXT <ID List>               
                 | OPEN <Value> FOR <Access> AS '#' Integer
                 | POKE <Value List>
-                | PRINT <Print list>
+                | PRINT <Print List>
                 | PRINT '#' Integer ',' <Print List>
                 | READ <ID List>           
                 | RETURN
@@ -33,7 +33,7 @@
                 | Remark
 
 <Access>   ::= INPUT
-             | OUPUT
+             | OUTPUT
                    
 <ID List>  ::= ID ',' <ID List> 
              | ID 

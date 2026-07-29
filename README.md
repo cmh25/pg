@@ -1,5 +1,5 @@
 # pg
-a simple parser generator in c
+A small parser generator in C.
 
 Takes a grammar spec as input and outputs the parse states and shift/reduce action table. Defaults to slr(1), but also supports lr(1), lalr(1), lr(0), and ll(1). Run without any arguments to see synopsis.
 ```
@@ -15,10 +15,44 @@ usage: ./pg <file> [pretty] [genhc]
   [genhc]: generate p.h and p.c
   [first]: print first() for each token
  [follow]: print follow() for each token
- [eunitr]: eliminate unit reductions (*experimental*)
+ [eunitr]: eliminate unit reductions from an LR parser
+ [strict]: return failure when the grammar has conflicts
+  [quiet]: suppress the grammar, table, and individual conflict reports
  [fullst]: print the full state table
   [showd]: show deleted states and transitions
 ```
+
+Grammar rules have the form `lhs operator rhs`. The operator is retained for
+display, so both `>` and `::=` may be used. Alternatives can be placed after
+`|`, an empty alternative denotes epsilon, and a line beginning with `|` extends
+the previous rule. Symbols appearing on a left-hand side are nonterminals; all
+other symbols are terminals. Inline comments begin with `#` outside quotes.
+`//` comments are also accepted.
+
+The `*`, `+`, `?`, and `[symbol]` shorthands create helper productions. For
+example, `items > item*` permits zero or more `item` symbols.
+
+A rule whose `::=` is followed by a newline uses multiline EBNF. Parenthesized
+groups, nested alternatives, and postfix `*`, `+`, and `?` are lowered to BNF:
+
+```
+arguments ::=
+  expression ( comma expression )*
+```
+
+Grammar rules, symbols, LR items, transitions, and lookahead sets grow
+dynamically. LALR lookaheads are propagated directly over the LR(0) machine
+instead of constructing a canonical LR(1) machine first.
+
+`eunitr` applies Pager's unit-production elimination algorithm to a completed LR
+machine. It should only be used on a conflict-free LR grammar. Generated
+semantic actions for unit productions are omitted, so do not use it when those
+unit reductions need observable semantic actions.
+
+`make test` runs the table snapshots and behavioral regression tests. `make
+testv` runs the snapshot matrix under Valgrind.
+From a Visual Studio developer command prompt, `make.bat test` builds `pg` and
+runs the snapshot and behavioral regression tests with MSVC.
 
 ```
 cmh@ubuntu20:~/pg$ cat test/000

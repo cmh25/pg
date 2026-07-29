@@ -5,8 +5,8 @@ typedef struct {
   char r[1024];
   char *lhs;
   char *op;
-  char *rhs[32];
-  int rhsi;
+  char **rhs;
+  int rhsi, rhsm;
 } rule;
 
 #define LR0 0
@@ -33,5 +33,7 @@ void pglalr();
 void pgbuildll();
 void pghll();
 void pgcll();
+int pgconflicts();
+void pgsetquiet(int q);
 
 #endif /* PG_H */

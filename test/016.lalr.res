@@ -23,7 +23,7 @@ A > . b , a b $e
 ---------- state 4 ----------
 A > b . , a b $e
 ---------- state 5 ----------
-S > A A . , $e b
+S > A A . , $e
 ---------- state 6 ----------
 A > a A . , a b $e
 state token action goto rule
@@ -36,9 +36,6 @@ state token action goto rule
     2 A          2    5    1
     2 a          1    3    2
     2 b          1    4    3
-    3 A          2    6    2
-    3 a          1    3    2
-    3 b          1    4    3
     3 A          2    6    2
     3 a          1    3    2
     3 b          1    4    3

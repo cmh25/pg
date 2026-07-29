@@ -1,21 +1,31 @@
 #!/bin/bash
 
 m=$1
-e=$2
+e=${2-}
+failed=0
+list="tests.$m$e"
+
+if [ ! -r "$list" ]; then
+  echo "error: test list not found: $list" >&2
+  exit 1
+fi
 
 os=`uname -s`
 if [ "$os" = "Darwin" ]; then echo "valgrind tests are linux only"; exit 0; fi
 
-for t in `cat tests.$m$e`; do
-  echo -n "$t: "
-  valgrind --leak-check=full ../pg $t $m $e >/dev/null 2> v$t.$m$e
-  grep -q "ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)" v$t.$m$e
-  if [ $? -ne 0 ]; then
+while IFS= read -r t; do
+  [ -n "$t" ] || continue
+  printf "%s: " "$t"
+  if ! valgrind --error-exitcode=99 --leak-check=full \
+      --errors-for-leak-kinds=definite,indirect,possible \
+      ../pg "$t" "$m" ${e:+"$e"} \
+      >/dev/null 2>"v$t.$m$e"; then
     echo -e "fail *****"
+    failed=1
   else
     echo -e "pass"
-    rm -f v$t.$m$e
+    rm -f "v$t.$m$e"
   fi
-done
+done < "$list"
 
-exit 0
+exit "$failed"

@@ -50,8 +50,8 @@ e > j .
 e > k .
 state token action goto rule
 ----- ----- ------ ---- ----
-    0 a          2    1    0
     0 $e         0    0    4
+    0 a          2    1    0
     0 b          2    2    1
     0 c          1    3    2
     0 d          1    4    3

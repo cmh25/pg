@@ -8,6 +8,12 @@ t: '+' '*' '(' ')' n $e
  4. t > f
  5. f > '(' e ')'
  6. f > n
+warning: shift/reduce conflict state[2] token['*']
+         reduce 2 (e > t)
+         shift 7
+warning: shift/reduce conflict state[9] token['*']
+         reduce 1 (e > e '+' t)
+         shift 12
 ---------- state 0 ----------
 $a > . e
 e > . e '+' t

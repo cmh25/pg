@@ -7,9 +7,6 @@ t: b d e $e
  3. A > C
  4. B > C
  5. C > e e
-warning: reduce/reduce conflict state[4] token[$e]
-         3. A > C .
-         4. B > C .
 ---------- state 0 ----------
 $a > . G
 G > . A b
@@ -44,12 +41,10 @@ state token action goto rule
     1 $e         0    0    0
     2 b          1    6    1
     3 d          1    7    2
-    4 $e         0    0    3
     4 b          0    0    3
     4 d          0    0    4
     5 e          1    8    5
     6 $e         0    0    1
     7 $e         0    0    2
-    8 $e         0    0    5
     8 b          0    0    5
     8 d          0    0    5

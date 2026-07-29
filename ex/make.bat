@@ -20,4 +20,9 @@ cl main.c p.c /Fe:p
 if errorlevel 1 (popd & exit /b 1)
 popd
 
+if /i "%~1"=="test" (
+  call test.bat
+  if errorlevel 1 exit /b 1
+)
+
 exit /b 0

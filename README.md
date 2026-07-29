@@ -49,10 +49,10 @@ machine. It should only be used on a conflict-free LR grammar. Generated
 semantic actions for unit productions are omitted, so do not use it when those
 unit reductions need observable semantic actions.
 
-`make test` runs the table snapshots and behavioral regression tests. `make
-testv` runs the snapshot matrix under Valgrind.
+`make test` runs the table snapshots, behavioral regression tests, and examples.
+`make testv` runs the snapshot matrix under Valgrind.
 From a Visual Studio developer command prompt, `make.bat test` builds `pg` and
-runs the snapshot and behavioral regression tests with MSVC.
+runs the snapshot, behavioral, and example regression tests with MSVC.
 
 ```
 cmh@ubuntu20:~/pg$ cat test/000

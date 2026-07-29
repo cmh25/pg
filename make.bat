@@ -1,6 +1,6 @@
 @echo off
-if "%1%"=="test" goto test
-if "%1%"=="ex" goto ex 
+if /i "%~1"=="test" goto test
+if /i "%~1"=="ex" goto ex
 cl main.c pg.c show.c /Fe:pg || exit /b 1
 exit /b 0
 :test
@@ -27,6 +27,11 @@ if errorlevel 1 (
 ) else (
   test\behavior.exe || set failed=1
 )
+echo examples:
+pushd ex
+call make.bat test
+if errorlevel 1 set failed=1
+popd
 exit /b %failed%
 :ex
 cd ex

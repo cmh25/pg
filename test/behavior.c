@@ -1,5 +1,9 @@
 #ifndef _WIN32
+#ifdef __APPLE__
+#define _DARWIN_C_SOURCE
+#else
 #define _XOPEN_SOURCE 700
+#endif
 #endif
 
 #include <errno.h>

@@ -72,7 +72,7 @@ if errorlevel 1 (
   for /f "usebackq tokens=*" %%L in ("%actual%") do echo %%L
 )
 
-fc /b "%~3" "%normalized%" >NUL
+fc /l /w "%~3" "%normalized%" >NUL
 if errorlevel 1 (
   echo %~1: fail
   echo expected:

@@ -52,6 +52,7 @@ if not "%actual_values%"=="%~3" (
 exit /b 0
 
 :append
+if "%~1"=="" exit /b 0
 set "actual_values=%actual_values%,%~1"
 exit /b 0
 

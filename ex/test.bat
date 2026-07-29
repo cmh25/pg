@@ -5,11 +5,7 @@ set "failed=0"
 set "base=%TEMP%\pg-ex-test-%RANDOM%-%RANDOM%"
 set "lr_input=%base%-lr.in"
 set "ll_input=%base%-ll.in"
-set "lr_expected=%base%-lr.expected"
-set "ll_expected=%base%-ll.expected"
-set "flat_expected=%base%-flat.expected"
 set "actual=%base%-actual"
-set "normalized=%base%-normalized"
 
 >"%lr_input%" echo 2
 >>"%lr_input%" echo 2+3
@@ -27,35 +23,10 @@ set "normalized=%base%-normalized"
 >>"%ll_input%" echo 8-2-1
 >>"%ll_input%" echo 20/5/2
 
->"%lr_expected%" echo 2
->>"%lr_expected%" echo 5
->>"%lr_expected%" echo 10
->>"%lr_expected%" echo 14
->>"%lr_expected%" echo 20
->>"%lr_expected%" echo 2
-
->"%ll_expected%" echo 14
->>"%ll_expected%" echo 10
->>"%ll_expected%" echo 20
->>"%ll_expected%" echo 6
->>"%ll_expected%" echo 4
->>"%ll_expected%" echo 2
->>"%ll_expected%" echo 7
->>"%ll_expected%" echo 10
-
->"%flat_expected%" echo 14
->>"%flat_expected%" echo 14
->>"%flat_expected%" echo 20
->>"%flat_expected%" echo 6
->>"%flat_expected%" echo 4
->>"%flat_expected%" echo 2
->>"%flat_expected%" echo 7
->>"%flat_expected%" echo 10
-
-call :check 000 "%lr_input%" "%lr_expected%"
-call :check 000.eunitr "%lr_input%" "%lr_expected%"
-call :check 021.ll1 "%ll_input%" "%ll_expected%"
-call :check 022.ll1 "%ll_input%" "%flat_expected%"
+call :check 000 "%lr_input%" ",2,5,10,14,20,2"
+call :check 000.eunitr "%lr_input%" ",2,5,10,14,20,2"
+call :check 021.ll1 "%ll_input%" ",14,10,20,6,4,2,7,10"
+call :check 022.ll1 "%ll_input%" ",14,14,20,6,4,2,7,10"
 
 call :cleanup
 exit /b %failed%
@@ -68,24 +39,22 @@ if errorlevel 1 (
   exit /b 0
 )
 
->"%normalized%" (
-  for /f "usebackq tokens=*" %%L in ("%actual%") do echo %%L
-)
-
-fc /l /w "%~3" "%normalized%" >NUL
-if errorlevel 1 (
+set "actual_values="
+for /f "usebackq tokens=*" %%L in ("%actual%") do call :append "%%L"
+if not "%actual_values%"=="%~3" (
   echo %~1: fail
-  echo expected:
-  type "%~3"
-  echo actual:
-  type "%normalized%"
+  echo expected: %~3
+  echo actual:   %actual_values%
   set "failed=1"
 ) else (
   echo %~1: pass
 )
 exit /b 0
 
+:append
+set "actual_values=%actual_values%,%~1"
+exit /b 0
+
 :cleanup
-del /q "%lr_input%" "%ll_input%" "%lr_expected%" "%ll_expected%" >NUL 2>&1
-del /q "%flat_expected%" "%actual%" "%normalized%" >NUL 2>&1
+del /q "%lr_input%" "%ll_input%" "%actual%" >NUL 2>&1
 exit /b 0
